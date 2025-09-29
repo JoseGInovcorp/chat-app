@@ -1,0 +1,8 @@
+[
+    {
+        "id": "local",
+        "key": "local",
+        "secret": "local",
+        "enabled": true
+    }
+]
