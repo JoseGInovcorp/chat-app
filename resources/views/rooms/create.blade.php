@@ -5,11 +5,11 @@
         </h2>
     </x-slot>
 
-    <div class="py-6">
-        <form method="POST" action="{{ route('rooms.store') }}" class="bg-white shadow rounded p-6">
+    <div class="py-6 animate-fadeIn">
+        <form method="POST" action="{{ route('rooms.store') }}" class="bg-white shadow rounded p-6 space-y-4">
             @csrf
 
-            <div class="mb-4">
+            <div>
                 <label for="name" class="block text-sm font-medium">Nome da Sala</label>
                 <input type="text" name="name" id="name" 
                        class="mt-1 block w-full border-gray-300 rounded"
@@ -19,14 +19,14 @@
                 @enderror
             </div>
 
-            <div class="mb-4">
+            <div>
                 <label for="avatar" class="block text-sm font-medium">Avatar (URL opcional)</label>
                 <input type="text" name="avatar" id="avatar" 
                        class="mt-1 block w-full border-gray-300 rounded">
             </div>
 
             <button type="submit" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded">
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 btn-animated">
                 Criar
             </button>
         </form>

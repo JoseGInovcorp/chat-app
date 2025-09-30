@@ -23,4 +23,14 @@ class Room extends Model
     {
         return 'slug';
     }
+
+    public function unreadCountFor(User $user)
+    {
+        $lastRead = $this->users()->where('user_id', $user->id)->first()->pivot->last_read_at;
+
+        return $this->messages()
+            ->where('created_at', '>', $lastRead ?? now()->subYear())
+            ->where('sender_id', '!=', $user->id)
+            ->count();
+    }
 }

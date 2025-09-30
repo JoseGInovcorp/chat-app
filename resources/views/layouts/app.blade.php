@@ -7,7 +7,8 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- CSS --}}
+    @vite(['resources/css/app.css'])
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen flex bg-gray-100 dark:bg-gray-900">
@@ -30,6 +31,10 @@
         </div>
     </div>
 
+    {{-- JS no fim do body para garantir que Echo já existe --}}
+    @vite(['resources/js/app.js'])
+
+    {{-- Scripts adicionais injetados pelas views --}}
     @stack('scripts')
 </body>
 </html>

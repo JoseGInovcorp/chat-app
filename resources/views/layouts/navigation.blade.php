@@ -15,10 +15,15 @@
             @forelse($rooms as $room)
                 <li>
                     <a href="{{ route('rooms.show', $room) }}"
-                       class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 {{ request()->is('rooms/'.$room->slug) ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                        <img src="{{ $room->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($room->name) }}"
-                             class="w-6 h-6 rounded" alt="">
-                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ $room->name }}</span>
+                       class="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 {{ request()->is('rooms/'.$room->slug) ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                        <div class="flex items-center gap-2">
+                            <img src="{{ $room->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($room->name) }}"
+                                 class="w-6 h-6 rounded" alt="">
+                            <span class="text-sm text-gray-700 dark:text-gray-200">{{ $room->name }}</span>
+                        </div>
+                        @if($room->unread_count > 0)
+                            <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        @endif
                     </a>
                 </li>
             @empty
@@ -32,10 +37,16 @@
             @forelse($directContacts as $contact)
                 <li>
                     <a href="{{ route('dm.show', $contact) }}"
-                       class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 {{ request()->is('dm/'.$contact->id) ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
-                        <img src="{{ $contact->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($contact->name) }}"
-                             class="w-6 h-6 rounded-full" alt="">
-                        <span class="text-sm text-gray-700 dark:text-gray-200">{{ $contact->name }}</span>
+                    data-user-id="{{ $contact->id }}"
+                    class="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 {{ request()->is('dm/'.$contact->id) ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                        <div class="flex items-center gap-2">
+                            <img src="{{ $contact->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($contact->name) }}"
+                                class="w-6 h-6 rounded-full" alt="">
+                            <span class="text-sm text-gray-700 dark:text-gray-200">{{ $contact->name }}</span>
+                        </div>
+                        @if($contact->unread_count > 0)
+                            <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        @endif
                     </a>
                 </li>
             @empty

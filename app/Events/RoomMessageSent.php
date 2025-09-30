@@ -15,11 +15,18 @@ class RoomMessageSent implements ShouldBroadcast
 
     public Message $message;
 
+    /**
+     * Cria uma nova instância do evento.
+     */
     public function __construct(Message $message)
     {
+        // Carrega também o sender para evitar lazy loading no broadcastWith
         $this->message = $message->load('sender:id,name,avatar');
     }
 
+    /**
+     * Define os canais de broadcast.
+     */
     public function broadcastOn(): array
     {
         return [
@@ -27,6 +34,9 @@ class RoomMessageSent implements ShouldBroadcast
         ];
     }
 
+    /**
+     * Dados enviados no broadcast.
+     */
     public function broadcastWith(): array
     {
         return [

@@ -8,7 +8,7 @@ Este projeto tem como objetivo criar um sistema de chat interno, inspirado na in
 
 ---
 
-## 🚀 Setup Inicial
+## 🚀 Setup Inicial - 29/09/2025
 
 -   Laravel instalado com [Herd](https://herd.laravel.com/)
 -   Projeto criado em `C:\inovcorp\chat-app`
@@ -64,6 +64,45 @@ Este projeto tem como objetivo criar um sistema de chat interno, inspirado na in
 -   [x] **Seeders consistentes** (`ChatSeeder`, `DirectMessagesSeeder`, `ChatDemoSeeder`) com utilizadores, salas e mensagens de exemplo
 
 ---
+
+## 🔄 Evolução para Mensagens em Tempo Real - 30/09/2025
+
+### 📡 Broadcasting com Laravel Echo
+
+-   [x] Instalação e configuração do Laravel Echo com Pusher
+-   [x] Criação dos eventos `RoomMessageSent` e `DirectMessageSent` com `ShouldBroadcast`
+-   [x] Emissão de eventos com `broadcast(...)->toOthers()` para evitar duplicações
+-   [x] Autorização de canais privados em `routes/channels.php` com logs de validação
+-   [x] Subscrição dinâmica no `bootstrap.js` com `window.roomId` e `window.userId`
+-   [x] Listener com filtro para ignorar eventos do próprio utilizador (`sender_id === userId`)
+-   [x] Correção crítica: ativação do `php artisan queue:work` para processar eventos
+-   [x] Validação visual e funcional com dois utilizadores em paralelo
+
+### 💬 Renderização Dinâmica de Mensagens
+
+-   [x] Função `appendMessage(e)` definida no Blade para inserir mensagens em tempo real
+-   [x] Comparação robusta entre `sender_id` e `window.userId` para posicionamento correto
+-   [x] Layout flexível: mensagens enviadas à direita (fundo azul), recebidas à esquerda (fundo cinza)
+-   [x] Scroll automático para manter a conversa visível
+-   [x] Correção da resposta JSON no controller para incluir `sender_id` e evitar renderização incorreta
+-   [x] Testes manuais com F5 e sem F5 para garantir consistência
+
+### 🛠️ Arquitetura Técnica Adicional
+
+-   [x] Separação clara entre mensagens de sala (`room_id`) e diretas (`recipient_id`)
+-   [x] Eventos com `broadcastWith()` formatado para o frontend
+-   [x] Logs no Laravel (`laravel.log`) para cada tentativa de subscrição e emissão
+-   [x] Fallback visual com `ui-avatars.com` para utilizadores sem avatar
+-   [x] Preparação para agrupamento visual e animações futuras
+
+### 🧪 Testes Realizados
+
+-   [x] Envio e receção de mensagens em tempo real com dois utilizadores
+-   [x] Validação visual do layout (direita/esquerda)
+-   [x] Verificação de duplicações e correção com `toOthers()`
+-   [x] Teste com `queue:work` desligado e ligado
+-   [x] Teste com F5 e sem F5 para garantir consistência
+-   [x] Teste de permissões para apagar mensagens
 
 ## 👥 Utilizadores de teste
 

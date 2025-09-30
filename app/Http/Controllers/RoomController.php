@@ -17,9 +17,12 @@ class RoomController extends Controller
 
     public function show(Room $room)
     {
-        // Carregar mensagens da sala, ordenadas
+        $room->users()->updateExistingPivot(auth()->id(), [
+            'last_read_at' => now(),
+        ]);
+
         $messages = $room->messages()
-            ->with('sender') // se quiseres mostrar o nome/avatar de quem enviou
+            ->with('sender')
             ->orderBy('created_at')
             ->get();
 
@@ -44,7 +47,6 @@ class RoomController extends Controller
             'slug' => Str::slug($data['name']) . '-' . Str::random(6),
         ]);
 
-        // adicionar criador à sala
         $room->users()->syncWithoutDetaching([
             auth()->id() => ['invited_by' => auth()->id(), 'joined_at' => now()]
         ]);

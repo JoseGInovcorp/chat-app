@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Message;
-use App\Models\Room;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Events\RoomMessageSent;
+use App\Events\DirectMessageSent;
 
 class MessageController extends Controller
 {
@@ -27,8 +27,14 @@ class MessageController extends Controller
             'body'         => $validated['body'],
         ]);
 
+        // 🔥 Broadcast para sala
         if ($message->room_id) {
-            event(new \App\Events\RoomMessageSent($message));
+            broadcast(new RoomMessageSent($message))->toOthers();
+        }
+
+        // 🔥 Broadcast para DM
+        if ($message->recipient_id) {
+            broadcast(new DirectMessageSent($message))->toOthers();
         }
 
         if ($request->expectsJson()) {
@@ -36,6 +42,7 @@ class MessageController extends Controller
                 'id'            => $message->id,
                 'body'          => $message->body,
                 'created_at'    => $message->created_at->setTimezone(config('app.timezone'))->format('H:i'),
+                'sender_id'     => $message->sender_id, // 👈 ADICIONA ISTO
                 'sender_name'   => $message->sender->name,
                 'sender_avatar' => $message->sender->avatar
                     ?? 'https://ui-avatars.com/api/?name=' . urlencode($message->sender->name),

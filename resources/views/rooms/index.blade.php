@@ -5,16 +5,17 @@
         </h2>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-6 animate-fadeIn">
         <a href="{{ route('rooms.create') }}" 
-           class="px-4 py-2 bg-blue-600 text-white rounded">
+           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 btn-animated">
             + Nova Sala
         </a>
 
-        <div class="mt-6 bg-white shadow rounded p-4">
+        <div class="mt-6 bg-white shadow rounded p-4 space-y-2">
             @forelse($rooms as $room)
                 <div class="border-b py-2">
-                    <a href="{{ route('rooms.show', $room) }}" class="text-blue-600">
+                    <a href="{{ route('rooms.show', $room) }}"
+                       class="text-blue-600 link-hover">
                         {{ $room->name }}
                     </a>
                 </div>

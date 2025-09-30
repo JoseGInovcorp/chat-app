@@ -3,8 +3,7 @@
 @section('content')
 <div id="room-app"
      data-room-id="{{ $room->id }}"
-     data-auth-id="{{ auth()->id() }}"
-     class="h-[calc(100vh-8rem)] flex flex-col">
+     class="h-[calc(100vh-8rem)] flex flex-col animate-fadeIn">
 
     <div class="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 shadow">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -13,7 +12,7 @@
 
         @can('invite', $room)
             <a href="{{ route('rooms.invite', $room) }}"
-               class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+               class="text-sm text-blue-600 dark:text-blue-400 hover:underline link-hover">
                 + Convidar
             </a>
         @endcan
@@ -21,12 +20,16 @@
 
     <div id="messages"
          class="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-gray-900">
+        @php $lastSenderId = null; @endphp
         @foreach($messages as $message)
+            @php $isSameSender = $lastSenderId === $message->sender_id; @endphp
             <div id="message-{{ $message->id }}"
-                 class="flex flex-col {{ $message->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {{ $message->sender->name }}
-                </div>
+                 class="flex flex-col {{ $message->sender_id === auth()->id() ? 'items-end' : 'items-start' }} animate-fadeInUp">
+                @unless($isSameSender)
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        {{ $message->sender->name }}
+                    </div>
+                @endunless
                 <div class="max-w-xs px-3 py-2 rounded-lg
                     {{ $message->sender_id === auth()->id()
                         ? 'bg-blue-500 text-white'
@@ -43,6 +46,7 @@
                     </button>
                 @endcan
             </div>
+            @php $lastSenderId = $message->sender_id; @endphp
         @endforeach
     </div>
 
@@ -56,7 +60,7 @@
                   placeholder="Escreve uma mensagem..." required></textarea>
 
         <button type="submit"
-                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 btn-animated">
             Enviar
         </button>
     </form>
@@ -65,13 +69,50 @@
 
 @push('scripts')
 <script>
+    window.roomId = {{ $room->id }};
+    window.userId = {{ auth()->id() }};
+
     const messagesDiv = document.getElementById('messages');
     const form = document.getElementById('message-form');
     const input = document.getElementById('message-input');
-    const roomId = document.getElementById('room-app').dataset.roomId;
-    const authId = document.getElementById('room-app').dataset.authId;
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Inicializa com o último sender visível no DOM
+    let lastSenderId = (() => {
+        const lastMsg = messagesDiv.querySelector('[id^="message-"]:last-child');
+        if (!lastMsg) return null;
+        const nameEl = lastMsg.querySelector('.text-xs');
+        return nameEl ? nameEl.textContent.trim() : null;
+    })();
+
+    window.appendMessage = (msg) => {
+        const isOwn = parseInt(msg.sender_id) === parseInt(window.userId);
+        const isSameSender = lastSenderId === msg.sender_id;
+
+        const div = document.createElement('div');
+        div.id = `message-${msg.id}`;
+        div.className = `flex flex-col ${isOwn ? 'items-end' : 'items-start'} animate-fadeInUp`;
+
+        div.innerHTML = `
+            ${!isSameSender ? `
+            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                ${msg.sender_name}
+            </div>` : ''}
+            <div class="max-w-xs px-3 py-2 rounded-lg ${
+                isOwn
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+            }">
+                <p class="text-sm">${msg.body}</p>
+                <span class="text-[10px] opacity-70">${msg.created_at}</span>
+            </div>
+        `;
+
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        lastSenderId = msg.sender_id;
+    };
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -85,27 +126,13 @@
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ body, room_id: roomId })
+            body: JSON.stringify({ body, room_id: window.roomId })
         });
 
         if (response.ok) {
             const data = await response.json();
-            const div = document.createElement('div');
-            div.id = `message-${data.id}`;
-            div.className = "flex flex-col items-end";
-            div.innerHTML = `
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    ${data.sender_name}
-                </div>
-                <div class="max-w-xs px-3 py-2 rounded-lg bg-blue-500 text-white">
-                    <p class="text-sm">${data.body}</p>
-                    <span class="text-[10px] opacity-70">${data.created_at}</span>
-                </div>
-                <button data-id="${data.id}" class="delete-message text-xs text-red-500 hover:underline mt-1">Apagar</button>
-            `;
-            messagesDiv.appendChild(div);
+            window.appendMessage(data);
             input.value = '';
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     });
 
@@ -124,27 +151,5 @@
             }
         }
     });
-
-    Echo.private(`room.${roomId}`)
-        .listen('RoomMessageSent', (e) => {
-            const div = document.createElement('div');
-            div.id = `message-${e.id}`;
-            div.className = "flex flex-col " + (parseInt(e.sender_id) === parseInt(authId) ? 'items-end' : 'items-start');
-            div.innerHTML = `
-                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    ${e.sender_name}
-                </div>
-                <div class="max-w-xs px-3 py-2 rounded-lg ${
-                    parseInt(e.sender_id) === parseInt(authId)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                }">
-                    <p class="text-sm">${e.body}</p>
-                    <span class="text-[10px] opacity-70">${e.created_at}</span>
-                </div>
-            `;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
 </script>
 @endpush

@@ -5,10 +5,32 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\DirectMessageController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
+use App\Events\TestEvent;
+
+Broadcast::routes([
+    'middleware' => ['web', 'auth'], // ✅ inclui 'web' para garantir sessão via cookie
+]);
 
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check()
+        ? redirect()->route('rooms.index')
+        : view('welcome');
 });
+
+// 🚀 Rota de teste para broadcasting
+Route::get('/broadcast-test', function () {
+    event(new TestEvent('Olá José'));
+    return 'Evento disparado!';
+});
+
+// ✅ Rota de verificação de sessão
+Route::get('/session-check', function () {
+    return response()->json([
+        'auth_id' => auth()->id(),
+        'user' => auth()->user(),
+    ]);
+})->middleware(['web', 'auth']);
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -36,12 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/dm/{user}', [DirectMessageController::class, 'store'])->name('dm.store');
 });
 
-// Mensagens diretas (DMs)
 Route::middleware('auth')->prefix('dm')->group(function () {
-    Route::get('{user}', [\App\Http\Controllers\DirectMessageController::class, 'show'])
-        ->name('dm.show');
-    Route::post('{user}', [\App\Http\Controllers\DirectMessageController::class, 'store'])
-        ->name('dm.store');
+    Route::get('{user}', [DirectMessageController::class, 'show'])->name('dm.show');
+    Route::post('{user}', [DirectMessageController::class, 'store'])->name('dm.store');
 });
 
 require __DIR__ . '/auth.php';
