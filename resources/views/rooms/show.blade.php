@@ -69,6 +69,7 @@
 
 @push('scripts')
 <script>
+    // expõe ids globais
     window.roomId = {{ $room->id }};
     window.userId = {{ auth()->id() }};
 
@@ -136,6 +137,14 @@
         }
     });
 
+    // 🔑 Novo: Enter envia, Shift+Enter quebra linha
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    });
+
     messagesDiv.addEventListener('click', async (e) => {
         if (e.target.classList.contains('delete-message')) {
             const id = e.target.dataset.id;
@@ -149,6 +158,24 @@
             if (response.ok) {
                 document.getElementById(`message-${id}`).remove();
             }
+        }
+    });
+
+    // ------------- badge sync: limpa pendingRoomBadges e oculta badge da sidebar -------------
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const pendingRooms = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]");
+            const filtered = pendingRooms.filter(x => parseInt(x) !== parseInt(window.roomId));
+            localStorage.setItem("pendingRoomBadges", JSON.stringify(filtered));
+
+            const badge = document.querySelector(`.room-unread[data-room-id="${window.roomId}"]`);
+            if (badge) badge.classList.add('hidden');
+
+            if (typeof window.clearPendingRoomBadge === 'function') {
+                window.clearPendingRoomBadge(window.roomId);
+            }
+        } catch (err) {
+            console.warn('Erro ao limpar pendingRoomBadges:', err);
         }
     });
 </script>

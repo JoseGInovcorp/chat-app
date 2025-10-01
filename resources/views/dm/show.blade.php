@@ -53,13 +53,20 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const app = document.getElementById('dm-app');
-    const peerId = app.dataset.peerId;
-    const authId = app.dataset.authId;
+    const peerId = parseInt(app.dataset.peerId);
+    const authId = parseInt(app.dataset.authId);
     const win = document.getElementById('dm-window');
     const form = document.getElementById('dm-form');
     const input = document.getElementById('dm-input');
 
     win.scrollTop = win.scrollHeight;
+
+    // 🔴 Limpa badge pendente para este contacto
+    const pending = JSON.parse(localStorage.getItem("pendingBadges") || "[]");
+    localStorage.setItem(
+        "pendingBadges",
+        JSON.stringify(pending.filter((x) => parseInt(x) !== peerId))
+    );
 
     // Inicializa com o último sender visível no DOM
     let lastSenderId = (() => {
@@ -70,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 
     const appendMessage = (msg) => {
-        const isOwn = parseInt(msg.sender_id) === parseInt(authId);
+        const isOwn = parseInt(msg.sender_id) === authId;
         const isSameSender = lastSenderId === msg.sender_id;
 
         const div = document.createElement('div');
@@ -127,14 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Echo.private(`dm.${authId}`)
         .listen('DirectMessageSent', (e) => {
-            if (parseInt(e.sender_id) === parseInt(authId)) {
+            if (parseInt(e.sender_id) === authId) {
                 console.log("🛑 Ignorado: DM do próprio utilizador");
                 return;
             }
 
             const isActiveThread =
-                (parseInt(e.sender_id) === parseInt(peerId)) ||
-                (parseInt(e.recipient_id) === parseInt(peerId));
+                (parseInt(e.sender_id) === peerId) ||
+                (parseInt(e.recipient_id) === peerId);
 
             if (isActiveThread) appendMessage(e);
         });

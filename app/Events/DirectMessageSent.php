@@ -26,12 +26,12 @@ class DirectMessageSent implements ShouldBroadcast
 
     /**
      * Define os canais de broadcast.
+     *  - Apenas o destinatário deve receber diretamente
      */
     public function broadcastOn(): array
     {
         return [
             new PrivateChannel('dm.' . $this->message->recipient_id),
-            new PrivateChannel('dm.' . $this->message->sender_id),
         ];
     }
 
@@ -49,6 +49,12 @@ class DirectMessageSent implements ShouldBroadcast
             'sender_name'  => $this->message->sender->name,
             'sender_avatar' => $this->message->sender->avatar
                 ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->message->sender->name),
+            'room_id' => $this->message->room_id, // garante presença do campo
         ];
+    }
+
+    public function broadcastAs()
+    {
+        return 'DirectMessageSent';
     }
 }

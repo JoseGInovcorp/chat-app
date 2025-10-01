@@ -6,6 +6,7 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Events\DirectMessageSent;
+use Illuminate\Support\Facades\Log;
 
 class DirectMessageController extends Controller
 {
@@ -35,7 +36,6 @@ class DirectMessageController extends Controller
         return view('dm.show', compact('user', 'messages'));
     }
 
-
     public function store(Request $request, User $user)
     {
         abort_if(auth()->id() === $user->id, 422, 'Não podes enviar mensagem a ti próprio.');
@@ -44,14 +44,33 @@ class DirectMessageController extends Controller
             'body' => 'required|string|max:1000',
         ]);
 
+        // Log antes da criação
+        Log::debug('DirectMessageController@store:start', [
+            'auth_id' => auth()->id(),
+            'recipient' => $user->id,
+            'body' => mb_strimwidth($data['body'], 0, 200),
+        ]);
+
         $msg = Message::create([
             'sender_id'    => auth()->id(),
             'recipient_id' => $user->id,
             'body'         => $data['body'],
         ]);
 
-        // 🔥 Broadcast em tempo real
+        // Log depois da criação
+        Log::debug('DirectMessageController@store:created', [
+            'message_id' => $msg->id,
+            'room_id' => $msg->room_id,
+            'recipient_id' => $msg->recipient_id,
+        ]);
+
+        // 🔥 Broadcast em tempo real (apenas para o destinatário)
         broadcast(new DirectMessageSent($msg))->toOthers();
+
+        Log::debug('DirectMessageController@store:event_emitted', [
+            'message_id' => $msg->id,
+            'event' => DirectMessageSent::class,
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([

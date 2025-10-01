@@ -104,6 +104,31 @@ Este projeto tem como objetivo criar um sistema de chat interno, inspirado na in
 -   [x] Teste com F5 e sem F5 para garantir consistência
 -   [x] Teste de permissões para apagar mensagens
 
+---
+
+## 🔁 Melhorias de UX e Correções — 02/10/2025
+
+### 🔔 Badges de Notificação
+
+-   [x] Correção do bug em que o **remetente** também via badge ao enviar mensagem para uma sala (agora apenas os outros membros recebem).
+-   [x] Garantia de que badges de DMs e Salas aparecem em tempo real sem necessidade de refresh.
+-   [x] Persistência de badges entre navegação e tabs continua assegurada via `localStorage`.
+
+### ⌨️ Envio de Mensagens
+
+-   [x] Unificação da lógica de envio: agora **Enter** envia a mensagem em **todas as views** (salas e DMs).
+-   [x] Suporte a **Shift+Enter** para quebra de linha dentro da mesma mensagem.
+-   [x] Ajuste aplicado diretamente no `show.blade.php` das salas.
+
+### 🧪 Testes Realizados
+
+-   [x] Alice envia mensagem para Sala Geral → badge aparece no João, **não** na Alice.
+-   [x] João envia DM para Alice → badge aparece corretamente no contacto do João na sidebar da Alice.
+-   [x] Envio com Enter testado em DMs e Salas → comportamento consistente.
+-   [x] Shift+Enter insere nova linha sem enviar.
+
+---
+
 ## 👥 Utilizadores de teste
 
 Foram criados automaticamente via seeders:
@@ -115,6 +140,42 @@ Foram criados automaticamente via seeders:
 | Bob   | bob@example.com   | password | user  |
 | Maria | maria@example.com | password | user  |
 | João  | joao@example.com  | password | user  |
+
+---
+
+## 🔁 Continuação da Evolução para Mensagens em Tempo Real — 01/10/2025
+
+### 🧭 Sincronização de Notificações e Badges
+
+-   [x] Implementação de lógica `pendingRoomBadges` via `localStorage` para persistência entre views
+-   [x] Exposição de helpers públicos `applyPendingRoomBadge()` e `clearPendingRoomBadge()` no layout
+-   [x] Dispatch de evento customizado `pendingRoomBadges:updated` para notificar o layout
+-   [x] Fallback imediato no `bootstrap.js` para aplicar badge ao receber evento `RoomMessageSent`
+-   [ ] Aplicação automática do badge quando o utilizador está numa DM (ainda não ocorre sem refresh)
+-   [ ] Observador de mutações (`MutationObserver`) no navigation para aplicar badges quando a sidebar é montada (pronto para integrar)
+
+### 🔐 Autorização e Diagnóstico de Canais Privados
+
+-   [x] Logs detalhados em `routes/channels.php` para cada tentativa de subscrição (`user.{id}`, `room.{id}`)
+-   [x] Correção do erro 403 em `/broadcasting/auth` com `withCredentials` e headers CSRF no `Echo`
+-   [x] Validação da subscrição ativa via `window.Echo.connector.channels` e estado do socket
+-   [x] Testes manuais com `php artisan tinker` para emissão direta de eventos e verificação de receção
+
+### 🧱 Robustez do Bootstrap e Echo
+
+-   [x] Releitura defensiva de variáveis globais (`authId`, `roomId`, `peerId`) com `readGlobals()`
+-   [x] Subscrição condicional e atrasada (`setTimeout`) para garantir DOM e sessão estável
+-   [x] Fallback visual e funcional para aplicação de badges mesmo sem elementos visíveis
+-   [x] Debug hooks no console para inspeção de canais ativos e eventos recebidos
+
+### 🧪 Testes Realizados
+
+-   [x] Envio e receção de mensagens em tempo real com dois utilizadores em views distintas
+-   [x] Validação da subscrição aos canais `room.{id}`, `dm.{id}` e `user.{id}`
+-   [x] Teste de receção de evento `RoomMessageSent` fora da sala ativa
+-   [x] Teste manual de aplicação de badge via `window.applyPendingRoomBadge(id)`
+-   [ ] Teste automático de aplicação de badge sem refresh (ainda pendente)
+-   [x] Teste de persistência de badges entre tabs e navegação
 
 ---
 

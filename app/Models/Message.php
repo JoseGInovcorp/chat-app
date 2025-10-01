@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\User;
 use App\Models\Room;
+use Illuminate\Validation\ValidationException;
 
 class Message extends Model
 {
@@ -20,6 +21,18 @@ class Message extends Model
     protected $casts = [
         'read_at' => 'datetime',
     ];
+
+    // 🚫 Validação: não pode ter room_id e recipient_id ao mesmo tempo
+    protected static function booted()
+    {
+        static::creating(function ($message) {
+            if ($message->room_id && $message->recipient_id) {
+                throw ValidationException::withMessages([
+                    'message' => ['Mensagem não pode pertencer a sala e DM ao mesmo tempo.'],
+                ]);
+            }
+        });
+    }
 
     // 🔗 Relações
     public function sender()

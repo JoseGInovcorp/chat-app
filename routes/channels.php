@@ -21,3 +21,12 @@ Broadcast::channel('dm.{userId}', function ($user, $userId) {
 
     return (int) $user->id === (int) $userId;
 });
+
+Broadcast::channel('user.{id}', function ($user, $id) {
+    \Log::info('Broadcast user tentativa', [
+        'auth_user_id' => $user->id ?? null,
+        'target_userId' => $id,
+        'can_access' => (int) ($user->id ?? 0) === (int) $id,
+    ]);
+    return (int) ($user->id ?? 0) === (int) $id;
+});
