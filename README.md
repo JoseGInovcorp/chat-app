@@ -106,29 +106,6 @@ Este projeto tem como objetivo criar um sistema de chat interno, inspirado na in
 
 ---
 
-## 🔁 Melhorias de UX e Correções — 02/10/2025
-
-### 🔔 Badges de Notificação
-
--   [x] Correção do bug em que o **remetente** também via badge ao enviar mensagem para uma sala (agora apenas os outros membros recebem).
--   [x] Garantia de que badges de DMs e Salas aparecem em tempo real sem necessidade de refresh.
--   [x] Persistência de badges entre navegação e tabs continua assegurada via `localStorage`.
-
-### ⌨️ Envio de Mensagens
-
--   [x] Unificação da lógica de envio: agora **Enter** envia a mensagem em **todas as views** (salas e DMs).
--   [x] Suporte a **Shift+Enter** para quebra de linha dentro da mesma mensagem.
--   [x] Ajuste aplicado diretamente no `show.blade.php` das salas.
-
-### 🧪 Testes Realizados
-
--   [x] Alice envia mensagem para Sala Geral → badge aparece no João, **não** na Alice.
--   [x] João envia DM para Alice → badge aparece corretamente no contacto do João na sidebar da Alice.
--   [x] Envio com Enter testado em DMs e Salas → comportamento consistente.
--   [x] Shift+Enter insere nova linha sem enviar.
-
----
-
 ## 👥 Utilizadores de teste
 
 Foram criados automaticamente via seeders:
@@ -176,6 +153,29 @@ Foram criados automaticamente via seeders:
 -   [x] Teste manual de aplicação de badge via `window.applyPendingRoomBadge(id)`
 -   [ ] Teste automático de aplicação de badge sem refresh (ainda pendente)
 -   [x] Teste de persistência de badges entre tabs e navegação
+
+---
+
+## 🔁 Melhorias de UX e Correções — 02/10/2025
+
+### 🔔 Badges de Notificação
+
+-   [x] Correção do bug em que o **remetente** também via badge ao enviar mensagem para uma sala (agora apenas os outros membros recebem).
+-   [x] Garantia de que badges de DMs e Salas aparecem em tempo real sem necessidade de refresh.
+-   [x] Persistência de badges entre navegação e tabs continua assegurada via `localStorage`.
+
+### ⌨️ Envio de Mensagens
+
+-   [x] Unificação da lógica de envio: agora **Enter** envia a mensagem em **todas as views** (salas e DMs).
+-   [x] Suporte a **Shift+Enter** para quebra de linha dentro da mesma mensagem.
+-   [x] Ajuste aplicado diretamente no `show.blade.php` das salas.
+
+### 🧪 Testes Realizados
+
+-   [x] Alice envia mensagem para Sala Geral → badge aparece no João, **não** na Alice.
+-   [x] João envia DM para Alice → badge aparece corretamente no contacto do João na sidebar da Alice.
+-   [x] Envio com Enter testado em DMs e Salas → comportamento consistente.
+-   [x] Shift+Enter insere nova linha sem enviar.
 
 ---
 
