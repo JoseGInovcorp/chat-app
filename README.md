@@ -128,8 +128,8 @@ Foram criados automaticamente via seeders:
 -   [x] Exposição de helpers públicos `applyPendingRoomBadge()` e `clearPendingRoomBadge()` no layout
 -   [x] Dispatch de evento customizado `pendingRoomBadges:updated` para notificar o layout
 -   [x] Fallback imediato no `bootstrap.js` para aplicar badge ao receber evento `RoomMessageSent`
--   [ ] Aplicação automática do badge quando o utilizador está numa DM (ainda não ocorre sem refresh)
--   [ ] Observador de mutações (`MutationObserver`) no navigation para aplicar badges quando a sidebar é montada (pronto para integrar)
+-   [x] Aplicação automática do badge quando o utilizador está numa DM
+-   [x] Observador de mutações (`MutationObserver`) no navigation para aplicar badges quando a sidebar é montada
 
 ### 🔐 Autorização e Diagnóstico de Canais Privados
 
@@ -151,7 +151,7 @@ Foram criados automaticamente via seeders:
 -   [x] Validação da subscrição aos canais `room.{id}`, `dm.{id}` e `user.{id}`
 -   [x] Teste de receção de evento `RoomMessageSent` fora da sala ativa
 -   [x] Teste manual de aplicação de badge via `window.applyPendingRoomBadge(id)`
--   [ ] Teste automático de aplicação de badge sem refresh (ainda pendente)
+-   [x] Teste automático de aplicação de badge sem refresh
 -   [x] Teste de persistência de badges entre tabs e navegação
 
 ---
@@ -176,6 +176,40 @@ Foram criados automaticamente via seeders:
 -   [x] João envia DM para Alice → badge aparece corretamente no contacto do João na sidebar da Alice.
 -   [x] Envio com Enter testado em DMs e Salas → comportamento consistente.
 -   [x] Shift+Enter insere nova linha sem enviar.
+
+---
+
+## Estabilização e Ajustes Técnicos — 03/10/2025
+
+### 🛠️ Correções Críticas de Subscrição
+
+-   [x] Correção da leitura de roomId no bootstrap.js para garantir subscrição ao canal correto (room.{id}) via #room-app.
+-   [x] Ajuste no listener de sala para aceitar eventos com room_id como string ou número (parseInt aplicado).
+-   [x] Adição de console.log no listener para confirmar receção do evento RoomMessageSent em tempo real.
+
+### 📡 Emissão para Múltiplos Canais
+
+-   [x] Modificação do evento RoomMessageSent para emitir simultaneamente para room.{id} e para todos os user.{id} dos membros da sala (exceto o remetente).
+-   [x] Garantia de que os badges continuam a funcionar mesmo com QUEUE_CONNECTION=sync ativo.
+-   [x] Inclusão de logs no evento para validação dos membros e canais emitidos.
+
+### ⚙️ Ambiente de Desenvolvimento
+
+-   [x] Alteração no .env para QUEUE_CONNECTION=sync durante desenvolvimento, eliminando necessidade de php artisan queue:work.
+-   [x] Testes manuais com dois utilizadores em paralelo para validar receção de mensagens e badges em tempo real com sync.
+
+### 🔐 Permissões Visuais
+
+-   [x] Ajuste no botão “+ Nova Sala” para aparecer apenas a utilizadores com role = admin via @if(auth()->user()?->isAdmin()).
+-   [x] Validação visual e funcional com utilizadores de diferentes permissões.
+
+### 🧪 Testes Realizados
+
+-   [x] Envio e receção de mensagens em tempo real com QUEUE_CONNECTION=sync.
+-   [x] Validação da emissão para múltiplos canais e receção de badges.
+-   [x] Teste de visibilidade condicional do botão “+ Nova Sala”.
+-   [x] Confirmação de que mensagens aparecem sem necessidade de refresh.
+-   [x] Verificação de consistência entre room_id enviado, gravado e emitido.
 
 ---
 

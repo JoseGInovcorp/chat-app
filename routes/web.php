@@ -1,30 +1,32 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\DirectMessageController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
 use App\Events\TestEvent;
 
+// Broadcasting
 Broadcast::routes([
-    'middleware' => ['web', 'auth'], // ✅ inclui 'web' para garantir sessão via cookie
+    'middleware' => ['web', 'auth'],
 ]);
 
+// Página inicial
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('rooms.index')
         : view('welcome');
 });
 
-// 🚀 Rota de teste para broadcasting
+// Teste de broadcasting
 Route::get('/broadcast-test', function () {
     event(new TestEvent('Olá José'));
     return 'Evento disparado!';
 });
 
-// ✅ Rota de verificação de sessão
+// Verificação de sessão
 Route::get('/session-check', function () {
     return response()->json([
         'auth_id' => auth()->id(),
@@ -32,10 +34,12 @@ Route::get('/session-check', function () {
     ]);
 })->middleware(['web', 'auth']);
 
+// Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Rotas protegidas
 Route::middleware('auth')->group(function () {
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -45,22 +49,24 @@ Route::middleware('auth')->group(function () {
     // Salas de chat
     Route::resource('rooms', RoomController::class)->only(['index', 'show', 'create', 'store']);
 
-    // Convidar utilizadores para sala (apenas admin)
-    Route::post('/rooms/{room}/invite', [RoomController::class, 'invite'])
+    // Convites para sala
+    Route::get('/rooms/{room}/invite', [RoomController::class, 'inviteForm'])
         ->name('rooms.invite')
+        ->middleware('can:invite,room');
+
+    Route::post('/rooms/{room}/invite', [RoomController::class, 'invite'])
+        ->name('rooms.invite.submit')
         ->middleware('can:invite,room');
 
     // Mensagens em sala
     Route::resource('messages', MessageController::class)->only(['store', 'destroy']);
 
     // Mensagens diretas (DMs)
-    Route::get('/dm/{user}', [DirectMessageController::class, 'show'])->name('dm.show');
-    Route::post('/dm/{user}', [DirectMessageController::class, 'store'])->name('dm.store');
-});
-
-Route::middleware('auth')->prefix('dm')->group(function () {
-    Route::get('{user}', [DirectMessageController::class, 'show'])->name('dm.show');
-    Route::post('{user}', [DirectMessageController::class, 'store'])->name('dm.store');
+    Route::prefix('dm')->group(function () {
+        Route::get('/', [DirectMessageController::class, 'index'])->name('dm.index');
+        Route::get('{user}', [DirectMessageController::class, 'show'])->name('dm.show');
+        Route::post('{user}', [DirectMessageController::class, 'store'])->name('dm.store');
+    });
 });
 
 require __DIR__ . '/auth.php';

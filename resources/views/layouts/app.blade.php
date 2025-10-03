@@ -26,7 +26,12 @@
             @endisset
 
             <main class="flex-1">
-                @yield('content')
+                {{-- Suporta tanto @section('content') como <x-app-layout> --}}
+                @hasSection('content')
+                    @yield('content')
+                @else
+                    {{ $slot ?? '' }}
+                @endif
             </main>
         </div>
     </div>

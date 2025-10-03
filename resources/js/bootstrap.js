@@ -20,17 +20,23 @@ window.Echo = new Echo({
     auth: { headers: { "X-CSRF-TOKEN": token }, withCredentials: true },
 });
 
-// ler variáveis globais
+// 🔎 Ler variáveis globais corretamente
 function readGlobals() {
     const auth = document.body.dataset?.authId;
-    const room = document.body.dataset?.roomId;
+
+    // Lê o roomId do #room-app
+    const roomEl = document.getElementById("room-app");
+    const room = roomEl?.dataset?.roomId;
+
     window.userId = auth ? String(parseInt(auth, 10)) : null;
     window.roomId = room ? String(parseInt(room, 10)) : null;
+
     const el = document.getElementById("dm-app");
     window.peerId =
         el && el.dataset?.peerId
             ? String(parseInt(el.dataset.peerId, 10))
             : null;
+
     console.log("globals read:", {
         userId: window.userId,
         roomId: window.roomId,
@@ -43,36 +49,19 @@ setTimeout(() => {
     readGlobals();
     if (!window.Echo) return console.warn("Echo missing");
 
-    // 🔒 DMs — canal privado do utilizador (badge no recetor, nunca no remetente)
+    // 🔒 DMs — canal privado do utilizador
     if (window.userId) {
         window.Echo.private(`dm.${window.userId}`).listen(
             ".DirectMessageSent",
             (e) => {
                 try {
                     const sender = String(e.sender_id ?? "");
-                    if (!sender) return;
-                    if (sender === window.userId) return; // ignora mensagens próprias
+                    if (!sender || sender === window.userId) return;
 
                     // aplica badge no contacto
                     if (typeof window.applyPendingBadge === "function") {
                         window.applyPendingBadge(sender);
                         console.log("bootstrap: applyPendingBadge for", sender);
-                    } else {
-                        const pending = JSON.parse(
-                            localStorage.getItem("pendingBadges") || "[]"
-                        ).map(String);
-                        if (!pending.includes(sender)) {
-                            pending.push(sender);
-                            localStorage.setItem(
-                                "pendingBadges",
-                                JSON.stringify(pending)
-                            );
-                            window.dispatchEvent(
-                                new CustomEvent("pendingBadges:updated", {
-                                    detail: { sender_id: sender },
-                                })
-                            );
-                        }
                     }
 
                     // se a conversa estiver aberta, appendMessage
@@ -94,7 +83,7 @@ setTimeout(() => {
         );
     }
 
-    // 🔒 Notificações de sala — canal privado user.{id} (uma única subscrição com filtro de remetente)
+    // 🔒 Notificações de sala — canal privado user.{id}
     if (window.userId) {
         window.Echo.private(`user.${window.userId}`).listen(
             ".RoomMessageSent",
@@ -104,14 +93,7 @@ setTimeout(() => {
                     const sender = String(e.sender_id ?? "");
                     if (!rid) return;
 
-                    // ignora mensagens enviadas pelo próprio utilizador
-                    if (sender === window.userId) {
-                        console.log(
-                            "bootstrap: ignorado RoomMessageSent do próprio user",
-                            sender
-                        );
-                        return;
-                    }
+                    if (sender === window.userId) return;
 
                     if (typeof window.applyPendingRoomBadge === "function") {
                         window.applyPendingRoomBadge(rid);
@@ -119,22 +101,6 @@ setTimeout(() => {
                             "bootstrap: applyPendingRoomBadge for",
                             rid
                         );
-                    } else {
-                        const pendingRooms = JSON.parse(
-                            localStorage.getItem("pendingRoomBadges") || "[]"
-                        ).map(String);
-                        if (!pendingRooms.includes(rid)) {
-                            pendingRooms.push(rid);
-                            localStorage.setItem(
-                                "pendingRoomBadges",
-                                JSON.stringify(pendingRooms)
-                            );
-                            window.dispatchEvent(
-                                new CustomEvent("pendingRoomBadges:updated", {
-                                    detail: { room_id: rid },
-                                })
-                            );
-                        }
                     }
                 } catch (err) {
                     console.warn("user channel listener error", err);
@@ -143,17 +109,21 @@ setTimeout(() => {
         );
     }
 
-    // 🔒 Sala atual — canal privado room.{id} (appendMessage quando dentro da sala)
+    // 🔒 Sala atual — canal privado room.{id}
     if (window.roomId && window.userId) {
         window.Echo.private(`room.${window.roomId}`).listen(
             ".RoomMessageSent",
             (e) => {
+                console.log("Evento recebido em room canal:", e); // debug
+
                 try {
-                    if (!e.room_id || e.recipient_id) return;
-                    if (String(e.room_id) !== window.roomId) return;
-                    if (String(e.sender_id) === window.userId) return;
-                    if (typeof window.appendMessage === "function")
+                    if (parseInt(e.room_id) !== parseInt(window.roomId)) return;
+                    if (parseInt(e.sender_id) === parseInt(window.userId))
+                        return;
+
+                    if (typeof window.appendMessage === "function") {
                         window.appendMessage(e);
+                    }
                 } catch (err) {
                     console.warn("room listener error", err);
                 }

@@ -10,6 +10,12 @@ use Illuminate\Support\Facades\Log;
 
 class DirectMessageController extends Controller
 {
+    public function index()
+    {
+        $contacts = User::where('id', '!=', auth()->id())->get();
+        return view('dm.index', compact('contacts'));
+    }
+
     public function show(User $user)
     {
         $auth = auth()->user();

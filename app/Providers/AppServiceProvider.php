@@ -20,7 +20,6 @@ class AppServiceProvider extends ServiceProvider
             $user = auth()->user();
 
             if ($user) {
-                // ✅ Salas com pivot carregado corretamente
                 $rooms = $user->rooms()
                     ->withPivot('last_read_at')
                     ->orderBy('name')
@@ -36,7 +35,6 @@ class AppServiceProvider extends ServiceProvider
                         return $room;
                     });
 
-                // ✅ Diretas com contagem de mensagens não lidas
                 $directContacts = User::where('status', 'active')
                     ->where('id', '!=', $user->id)
                     ->orderBy('name')
