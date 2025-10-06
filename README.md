@@ -213,6 +213,39 @@ Foram criados automaticamente via seeders:
 
 ---
 
+## Correções e Melhorias de Real‑time e Badges — 06/10/2025
+
+### 🔧 Integração e Robustez de Eventos
+
+-   [x] Adicionados aliases no bootstrap.js para garantir receção de DirectMessageSent quando o evento chega com namespace/class (.App\\Events\\DirectMessageSent; .App.Events DirectMessageSent).
+-   [x] Echo inicializado com namespace: null e headers CSRF configurados no client.
+
+### 📨 Fluxo de Mensagens (DMs) e Rooms
+
+-   [x] Centralizados listeners no bootstrap.js para user.{id} e room.{id}, com lógica unificada para DMs e RoomMessageSent.
+-   [x] Exposta globalmente window.appendMessage nos views (dm/show e rooms/show) para que os listeners centrais insiram mensagens.
+-   [x] Implementado optimistic append com temp_id nos envios (DMs e salas) e deduplicação por data-message-id/temp_id para evitar duplicados no emissor.
+
+### 🔔 Lógica de Badges e Consistência de UI
+
+-   [x] Badge de DM só é aplicado quando o destinatário NÃO tem a conversa aberta (verificação via window.peerId).
+-   [x] Badge de sala só é aplicado quando o utilizador NÃO está na sala aberta (verificação via window.roomId).
+-   [x] Sidebar passa a ouvir pendingBadges:updated e pendingRoomBadges:updated e aplica/limpa badges; reaplicação a partir de localStorage valida existência do elemento antes de mostrar.
+-   [x] Cross‑tab sync via evento storage mantido; limpeza explícita de badges ao abrir thread/sala adicionada.
+
+### 🛡️ Prevenção de Regressões
+
+-   [x] Evitada duplicação de append: listeners centrais ignoram eventos originados pelo próprio remetente quando apropriado.
+-   [x] Removidos dispatchs acidentais de pendingRoomBadges a partir do handler de DMs (proteção defensiva).
+
+### ✅ Testes e Validação
+
+-   [x] Testes manuais com dois utilizadores (abas diferentes) confirmaram: entrega em tempo real, badge visível apenas para utilizadores fora da thread/sala, ausência de duplicados no emissor.
+-   [x] Verificação no console: [echo] connected, [echo] listeners initialized, e [DM EVENT RAW] visíveis durante testes.
+-   [x] Checks: Object.keys(window.Echo.connector.pusher.channels.channels) contém private-user.{id} e private-room.{id} conforme esperado.
+
+---
+
 ## 📎 Notas
 
 -   Projeto isolado do sistema de biblioteca para manter domínios separados

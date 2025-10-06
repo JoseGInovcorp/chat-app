@@ -15,9 +15,6 @@ class DirectMessageSent implements ShouldBroadcast
 
     public Message $message;
 
-    /**
-     * Cria uma nova instância do evento.
-     */
     public function __construct(Message $message)
     {
         // Carrega também o sender para evitar lazy loading no broadcastWith
@@ -26,12 +23,14 @@ class DirectMessageSent implements ShouldBroadcast
 
     /**
      * Define os canais de broadcast.
-     *  - Apenas o destinatário deve receber diretamente
+     * Agora envia tanto para o destinatário como para o remetente,
+     * mas em canais user.{id}, consistentes com RoomMessageSent.
      */
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('dm.' . $this->message->recipient_id),
+            new PrivateChannel('user.' . $this->message->recipient_id),
+            new PrivateChannel('user.' . $this->message->sender_id),
         ];
     }
 
@@ -41,19 +40,19 @@ class DirectMessageSent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'id'           => $this->message->id,
-            'body'         => $this->message->body,
-            'created_at'   => $this->message->created_at->format('d/m/Y H:i'),
-            'sender_id'    => $this->message->sender_id,
-            'recipient_id' => $this->message->recipient_id,
-            'sender_name'  => $this->message->sender->name,
+            'id'            => $this->message->id,
+            'body'          => $this->message->body,
+            'created_at'    => $this->message->created_at->format('d/m/Y H:i'),
+            'sender_id'     => $this->message->sender_id,
+            'recipient_id'  => $this->message->recipient_id,
+            'sender_name'   => $this->message->sender->name,
             'sender_avatar' => $this->message->sender->avatar
                 ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->message->sender->name),
-            'room_id' => $this->message->room_id, // garante presença do campo
+            'room_id'       => $this->message->room_id,
         ];
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'DirectMessageSent';
     }

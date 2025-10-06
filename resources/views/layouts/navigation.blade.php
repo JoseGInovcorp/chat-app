@@ -29,7 +29,8 @@
                                 <span class="text-sm text-gray-700 dark:text-gray-200 font-medium">{{ $room->name }}</span>
                             </div>
                             <span class="room-unread w-2 h-2 rounded-full bg-red-500 {{ $room->unread_count > 0 ? 'animate-ping' : 'hidden' }}"
-                                  data-room-id="{{ $room->id }}"></span>
+                                    data-badge-type="room"
+                                    data-badge-id="{{ $room->id }}"></span>
                         </a>
                     </li>
                 @empty
@@ -58,7 +59,8 @@
                                 <span class="text-sm text-gray-700 dark:text-gray-200 font-medium">{{ $contact->name }}</span>
                             </div>
                             <span class="contact-unread w-2 h-2 rounded-full bg-red-500 {{ $contact->unread_count > 0 ? 'animate-ping' : 'hidden' }}"
-                                  data-user-id-badge="{{ $contact->id }}"></span>
+                                    data-badge-type="dm"
+                                    data-badge-id="{{ $contact->id }}"></span>
                         </a>
                     </li>
                 @empty
@@ -88,9 +90,10 @@
         </div>
     </div>
 
-    <!-- Script: expõe auth/room e aplica/limpa badges pendentes -->
+<!-- Script: expõe auth/room e aplica/limpa badges pendentes -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    // Expor auth e sala atual
     document.body.dataset.authId = "{{ auth()->id() }}";
     @if(request()->routeIs('rooms.show') && isset($room))
         document.body.dataset.roomId = "{{ $room->id }}";
@@ -98,12 +101,18 @@ document.addEventListener("DOMContentLoaded", () => {
         delete document.body.dataset.roomId;
     @endif
 
-    // simple, deterministic helpers
-    window.applyPendingBadge = window.applyPendingBadge || function(senderId) {
+    // --- DMs ---
+    window.applyPendingBadge = function(senderId) {
         if (!senderId) return;
         senderId = String(senderId);
-        const badge = document.querySelector(`.contact-unread[data-user-id-badge="${senderId}"]`);
+
+        // Atualiza DOM imediatamente
+        const badge = document.querySelector(
+            `.contact-unread[data-badge-type="dm"][data-badge-id="${senderId}"]`
+        );
         if (badge) badge.classList.remove('hidden');
+
+        // Guarda em localStorage
         const pending = JSON.parse(localStorage.getItem("pendingBadges") || "[]").map(String);
         if (!pending.includes(senderId)) {
             pending.push(senderId);
@@ -111,25 +120,35 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    window.clearPendingBadge = window.clearPendingBadge || function(senderId) {
+    window.clearPendingBadge = function(senderId) {
         if (!senderId) return;
         senderId = String(senderId);
-        const filtered = JSON.parse(localStorage.getItem("pendingBadges") || "[]").map(String).filter(x => x !== senderId);
-        localStorage.setItem("pendingBadges", JSON.stringify(filtered));
-        const badge = document.querySelector(`.contact-unread[data-user-id-badge="${senderId}"]`);
+
+        // Atualiza DOM
+        const badge = document.querySelector(
+            `.contact-unread[data-badge-type="dm"][data-badge-id="${senderId}"]`
+        );
         if (badge) badge.classList.add('hidden');
+
+        // Atualiza localStorage
+        const filtered = JSON.parse(localStorage.getItem("pendingBadges") || "[]")
+            .map(String)
+            .filter(x => x !== senderId);
+        localStorage.setItem("pendingBadges", JSON.stringify(filtered));
     };
 
-    window.applyPendingRoomBadge = window.applyPendingRoomBadge || function(roomId) {
+    // --- Salas ---
+    window.applyPendingRoomBadge = function(roomId) {
         if (!roomId) return;
         roomId = String(roomId);
-        const badge = document.querySelector(`.room-unread[data-room-id="${roomId}"]`);
-        if (badge) {
-            badge.classList.remove('hidden');
-            const remaining = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]").map(String).filter(x => x !== roomId);
-            localStorage.setItem("pendingRoomBadges", JSON.stringify(remaining));
-            return;
-        }
+
+        // Atualiza DOM imediatamente
+        const badge = document.querySelector(
+            `.room-unread[data-badge-type="room"][data-badge-id="${roomId}"]`
+        );
+        if (badge) badge.classList.remove('hidden');
+
+        // Guarda em localStorage
         const pending = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]").map(String);
         if (!pending.includes(roomId)) {
             pending.push(roomId);
@@ -137,58 +156,65 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    window.clearPendingRoomBadge = window.clearPendingRoomBadge || function(roomId) {
+    window.clearPendingRoomBadge = function(roomId) {
         if (!roomId) return;
         roomId = String(roomId);
-        const remaining = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]").map(String).filter(x => x !== roomId);
-        localStorage.setItem("pendingRoomBadges", JSON.stringify(remaining));
-        const badge = document.querySelector(`.room-unread[data-room-id="${roomId}"]`);
+
+        // Atualiza DOM
+        const badge = document.querySelector(
+            `.room-unread[data-badge-type="room"][data-badge-id="${roomId}"]`
+        );
         if (badge) badge.classList.add('hidden');
+
+        // Atualiza localStorage
+        const filtered = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]")
+            .map(String)
+            .filter(x => x !== roomId);
+        localStorage.setItem("pendingRoomBadges", JSON.stringify(filtered));
     };
 
-    // apply any stored pendings immediately
+    // --- Reaplicar badges guardados no arranque ---
     (function applyAll() {
         const pendingDMs = JSON.parse(localStorage.getItem("pendingBadges") || "[]").map(String);
         pendingDMs.forEach(id => {
-            const badge = document.querySelector(`.contact-unread[data-user-id-badge="${id}"]`);
+            const badge = document.querySelector(
+                `.contact-unread[data-badge-type="dm"][data-badge-id="${id}"]`
+            );
             if (badge) badge.classList.remove('hidden');
         });
+
         const pendingRooms = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]").map(String);
         pendingRooms.forEach(rid => {
-            const rb = document.querySelector(`.room-unread[data-room-id="${rid}"]`);
+            const rb = document.querySelector(
+                `.room-unread[data-badge-type="room"][data-badge-id="${rid}"]`
+            );
             if (rb) rb.classList.remove('hidden');
         });
     })();
 
-    // listen for bootstrap dispatches
-    window.addEventListener('pendingBadges:updated', (e) => {
-        const sid = e?.detail?.sender_id;
-        if (sid) window.applyPendingBadge(sid);
-    });
-    window.addEventListener('pendingRoomBadges:updated', (e) => {
-        const rid = e?.detail?.room_id;
-        if (rid) window.applyPendingRoomBadge(rid);
-    });
-
-    // cross-tab storage
+    // --- Cross-tab sync ---
     window.addEventListener('storage', (e) => {
         if (e.key === 'pendingBadges') {
             const pendingDMs = JSON.parse(localStorage.getItem("pendingBadges") || "[]").map(String);
             pendingDMs.forEach(id => {
-                const badge = document.querySelector(`.contact-unread[data-user-id-badge="${id}"]`);
+                const badge = document.querySelector(
+                    `.contact-unread[data-badge-type="dm"][data-badge-id="${id}"]`
+                );
                 if (badge) badge.classList.remove('hidden');
             });
         }
         if (e.key === 'pendingRoomBadges') {
             const pendingRooms = JSON.parse(localStorage.getItem("pendingRoomBadges") || "[]").map(String);
             pendingRooms.forEach(rid => {
-                const rb = document.querySelector(`.room-unread[data-room-id="${rid}"]`);
+                const rb = document.querySelector(
+                    `.room-unread[data-badge-type="room"][data-badge-id="${rid}"]`
+                );
                 if (rb) rb.classList.remove('hidden');
             });
         }
     });
 
-    // click handlers to clear pendings
+    // --- Clicks limpam badges ---
     document.querySelectorAll('.direct-contact').forEach(link => {
         link.addEventListener('click', () => {
             const id = link.dataset.userId;
@@ -201,6 +227,18 @@ document.addEventListener("DOMContentLoaded", () => {
             if (id) window.clearPendingRoomBadge(id);
         });
     });
+
+    // --- NOVO: ouvir eventos vindos do bootstrap (Echo listeners) ---
+    window.addEventListener("pendingBadges:updated", (ev) => {
+        const id = ev?.detail?.sender_id;
+        if (id) window.applyPendingBadge(String(id));
+    });
+
+    window.addEventListener("pendingRoomBadges:updated", (ev) => {
+        const rid = ev?.detail?.room_id;
+        if (rid) window.applyPendingRoomBadge(String(rid));
+    });
 });
 </script>
+
 </aside>

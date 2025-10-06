@@ -53,55 +53,78 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const app = document.getElementById('dm-app');
-    const peerId = parseInt(app.dataset.peerId);
-    const authId = parseInt(app.dataset.authId);
+    const peerId = parseInt(app.dataset.peerId, 10);
+    const authId = parseInt(app.dataset.authId, 10);
     const win = document.getElementById('dm-window');
     const form = document.getElementById('dm-form');
     const input = document.getElementById('dm-input');
 
+    // Scroll inicial
     win.scrollTop = win.scrollHeight;
 
-    const pending = JSON.parse(localStorage.getItem("pendingBadges") || "[]");
-    localStorage.setItem("pendingBadges", JSON.stringify(pending.filter((x) => parseInt(x) !== peerId)));
-
     let lastSenderId = (() => {
-        const lastMsg = win.querySelector('[id^="message-"]:last-child');
+        const lastMsg = win.querySelector('[data-message-id]:last-child');
         if (!lastMsg) return null;
         const nameEl = lastMsg.querySelector('.text-xs');
         return nameEl ? nameEl.textContent.trim() : null;
     })();
 
     const appendMessage = (msg) => {
-        const isOwn = parseInt(msg.sender_id) === authId;
-        const isSameSender = lastSenderId === msg.sender_id;
+        try {
+            // Normaliza payload (se vier aninhado)
+            const m = msg?.message ?? msg;
+            if (!m || (!m.id && !m.temp_id)) return;
 
-        const div = document.createElement('div');
-        div.className = `flex flex-col ${isOwn ? 'items-end' : 'items-start'} animate-fadeInUp`;
+            const messageKey = m.id ? `message-${m.id}` : `temp-${m.temp_id}`;
+            // Evitar duplicados
+            if (win.querySelector(`[data-message-id="${messageKey}"]`)) return;
 
-        div.innerHTML = `
-            ${!isSameSender ? `
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
-                ${msg.sender_name ?? ''}
-            </div>` : ''}
-            <div class="max-w-xs px-4 py-2 rounded-xl shadow-sm font-medium ${
-                isOwn
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-            }">
-                <p class="text-sm whitespace-pre-line">${msg.body}</p>
-                <span class="text-[10px] opacity-70 block text-right mt-1">${msg.created_at}</span>
-            </div>
-        `;
+            const isOwn = parseInt(m.sender_id, 10) === authId;
+            const isSameSender = lastSenderId === String(m.sender_id);
 
-        win.appendChild(div);
-        win.scrollTop = win.scrollHeight;
-        lastSenderId = msg.sender_id;
+            const div = document.createElement('div');
+            div.setAttribute('data-message-id', messageKey);
+            div.className = `flex flex-col ${isOwn ? 'items-end' : 'items-start'} animate-fadeInUp`;
+
+            div.innerHTML = `
+                ${!isSameSender ? `
+                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
+                    ${m.sender_name ?? ''}
+                </div>` : ''}
+                <div class="max-w-xs px-4 py-2 rounded-xl shadow-sm font-medium ${
+                    isOwn
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                }">
+                    <p class="text-sm whitespace-pre-line">${m.body ?? ''}</p>
+                    <span class="text-[10px] opacity-70 block text-right mt-1">${m.created_at ?? ''}</span>
+                </div>
+            `;
+
+            win.appendChild(div);
+            win.scrollTop = win.scrollHeight;
+            lastSenderId = String(m.sender_id ?? lastSenderId);
+
+            // Limpar badge DM se esta thread estiver aberta
+            if (typeof window.clearPendingBadge === 'function') {
+                window.clearPendingBadge(peerId);
+            }
+        } catch (err) {
+            console.warn('appendMessage error (dm)', err);
+        }
     };
+
+    // Expõe globalmente para o bootstrap.js
+    window.appendMessage = appendMessage;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const body = input.value.trim();
         if (!body) return;
+
+        // cria temp_id e elemento temporário visível
+        const tempId = `t${Date.now()}`;
+        appendMessage({ temp_id: tempId, sender_id: authId, recipient_id: peerId, body, sender_name: 'Tu', created_at: 'Agora' });
 
         try {
             const res = await fetch(`/dm/${peerId}`, {
@@ -111,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
-                body: JSON.stringify({ body }),
+                body: JSON.stringify({ body, temp_id: tempId }),
             });
 
             if (!res.ok) {
@@ -120,12 +143,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const msg = await res.json();
+
+            // Substitui elemento temp pelo real ou faz append deduplicado
+            const tempEl = win.querySelector(`[data-message-id="temp-${tempId}"]`);
+            if (tempEl) {
+                // cria markup real (reusa appendMessage para normalizar)
+                // remove temp antes de inserir real para evitar duplicados visuais
+                tempEl.remove();
+            }
             appendMessage(msg);
             input.value = '';
         } catch (err) {
             console.error('Erro de rede ao enviar DM:', err);
         }
     });
+
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -134,16 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    Echo.private(`dm.${authId}`)
-        .listen('DirectMessageSent', (e) => {
-            if (parseInt(e.sender_id) === authId) return;
-
-            const isActiveThread =
-                (parseInt(e.sender_id) === peerId) ||
-                (parseInt(e.recipient_id) === peerId);
-
-            if (isActiveThread) appendMessage(e);
-        });
+    // NOTA: o listener Echo para DMs foi removido daqui.
+    // O bootstrap.js central já trata eventos e chama window.appendMessage quando a thread está aberta.
 });
 </script>
+
 @endpush

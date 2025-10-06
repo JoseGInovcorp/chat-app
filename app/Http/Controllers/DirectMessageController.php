@@ -26,18 +26,10 @@ class DirectMessageController extends Controller
 
         $messages = Message::directBetween($auth->id, $user->id)
             ->with('sender:id,name,avatar')
-            ->orderBy('created_at')
-            ->paginate(50);
-
-        // 🔒 Validação extra: garantir que todas as mensagens são entre os dois
-        $invalid = $messages->filter(function ($m) use ($auth, $user) {
-            return !in_array($m->sender_id, [$auth->id, $user->id]) ||
-                !in_array($m->recipient_id, [$auth->id, $user->id]);
-        });
-
-        if ($invalid->isNotEmpty()) {
-            abort(500, 'Mensagens fora do escopo da conversa.');
-        }
+            ->orderByDesc('created_at')   // <- mais recentes primeiro
+            ->take(50)                    // <- últimas 50
+            ->get()
+            ->reverse();                  // <- inverter para mostrar em ordem cronológica
 
         return view('dm.show', compact('user', 'messages'));
     }

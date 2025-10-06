@@ -73,6 +73,7 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', () => {
     window.roomId = {{ $room->id }};
     window.userId = {{ auth()->id() }};
 
@@ -83,38 +84,55 @@
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     let lastSenderId = (() => {
-        const lastMsg = messagesDiv.querySelector('[id^="message-"]:last-child');
+        const lastMsg = messagesDiv.querySelector('[data-message-id]:last-child');
         if (!lastMsg) return null;
         const senderEl = lastMsg.querySelector('.text-xs');
         return senderEl ? senderEl.textContent.trim() : null;
     })();
 
     window.appendMessage = (msg) => {
-        const isOwn = parseInt(msg.sender_id) === parseInt(window.userId);
-        const isSameSender = lastSenderId === msg.sender_id;
+        try {
+            const m = msg?.message ?? msg;
+            if (!m || (!m.id && !m.temp_id)) return;
 
-        const div = document.createElement('div');
-        div.id = `message-${msg.id}`;
-        div.className = `flex flex-col ${isOwn ? 'items-end' : 'items-start'} animate-fadeInUp`;
+            const messageKey = m.id ? `message-${m.id}` : `temp-${m.temp_id}`;
+            // Evitar duplicados
+            if (messagesDiv.querySelector(`[data-message-id="${messageKey}"]`)) return;
 
-        div.innerHTML = `
-            ${!isSameSender ? `
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
-                ${msg.sender_name}
-            </div>` : ''}
-            <div class="max-w-xs px-4 py-2 rounded-xl shadow-sm font-medium ${
-                isOwn
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-            }">
-                <p class="text-sm whitespace-pre-line">${msg.body}</p>
-                <span class="text-[10px] opacity-70 block text-right mt-1">${msg.created_at}</span>
-            </div>
-        `;
+            const isOwn = parseInt(m.sender_id, 10) === parseInt(window.userId, 10);
+            const isSameSender = lastSenderId === String(m.sender_id);
 
-        messagesDiv.appendChild(div);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        lastSenderId = msg.sender_id;
+            const div = document.createElement('div');
+            div.id = m.id ? `message-${m.id}` : '';
+            div.setAttribute('data-message-id', messageKey);
+            div.className = `flex flex-col ${isOwn ? 'items-end' : 'items-start'} animate-fadeInUp`;
+
+            div.innerHTML = `
+                ${!isSameSender ? `
+                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
+                    ${m.sender_name ?? ''}
+                </div>` : ''}
+                <div class="max-w-xs px-4 py-2 rounded-xl shadow-sm font-medium ${
+                    isOwn
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                }">
+                    <p class="text-sm whitespace-pre-line">${m.body ?? ''}</p>
+                    <span class="text-[10px] opacity-70 block text-right mt-1">${m.created_at ?? ''}</span>
+                </div>
+            `;
+
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            lastSenderId = String(m.sender_id ?? lastSenderId);
+
+            // Limpar badge de sala se esta sala estiver aberta
+            if (typeof window.clearPendingRoomBadge === 'function') {
+                window.clearPendingRoomBadge(window.roomId);
+            }
+        } catch (err) {
+            console.warn('appendMessage error (room)', err);
+        }
     };
 
     form.addEventListener('submit', async (e) => {
@@ -122,24 +140,36 @@
         const body = input.value.trim();
         if (!body) return;
 
+        const tempId = `t${Date.now()}`;
+        window.appendMessage({ temp_id: tempId, sender_id: window.userId, room_id: window.roomId, body, sender_name: 'Tu', created_at: 'Agora' });
+
         const formData = new FormData(form);
         formData.set('body', body);
+        formData.set('temp_id', tempId);
 
-        const response = await fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-            },
-            body: formData
-        });
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: formData
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            window.appendMessage(data);
-            input.value = '';
+            if (response.ok) {
+                const data = await response.json();
+                // Remove temp element se existir, depois append da mensagem real
+                const tempEl = document.querySelector(`[data-message-id="temp-${tempId}"]`);
+                if (tempEl) tempEl.remove();
+                window.appendMessage(data);
+                input.value = '';
+            }
+        } catch (err) {
+            console.error('Erro ao enviar mensagem de sala:', err);
         }
     });
+
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -159,9 +189,14 @@
                 }
             });
             if (response.ok) {
-                document.getElementById(`message-${id}`).remove();
+                document.getElementById(`message-${id}`)?.remove();
             }
         }
     });
+
+    // NOTA: o listener Echo para room append foi removido daqui.
+    // O bootstrap.js centraliza listeners e chama window.appendMessage quando a sala está aberta.
+});
 </script>
+
 @endpush
