@@ -15,6 +15,15 @@ export const BadgeManager = {
         const current = type === "dm" ? window.peerId : window.roomId;
         if (String(current) === id) return;
 
+        // ✅ Evitar aplicar badge se a leitura foi recente
+        if (type === "room") {
+            const lastRead = parseInt(
+                localStorage.getItem(`roomLastRead:${id}`) ?? "0"
+            );
+            const now = Date.now();
+            if (lastRead && now <= lastRead) return;
+        }
+
         const selector = `[data-badge-type="${type}"][data-badge-id="${id}"]`;
         const badge = document.querySelector(selector);
         if (badge) badge.classList.remove("hidden");

@@ -10,18 +10,22 @@ export function handleRoomMessageEvent(e) {
         const payload = e?.message ?? e;
         const roomId = String(payload?.room_id ?? "");
         const senderId = String(payload?.sender_id ?? "");
+        const createdAt = new Date(payload?.created_at).getTime();
 
         if (!roomId || senderId === String(window.userId)) return;
 
+        const lastRead = parseInt(
+            localStorage.getItem(`roomLastRead:${roomId}`) ?? "0"
+        );
+        if (createdAt <= lastRead) return;
+
         const currentRoom = window.roomId || null;
 
-        // Se estou na sala ativa → limpar badge (a mensagem já é appendada pelo room.js)
         if (currentRoom && String(currentRoom) === roomId) {
             BadgeManager.clearBadge("room", roomId);
             return;
         }
 
-        // Caso contrário → aplicar badge
         BadgeManager.applyBadge("room", roomId);
     } catch (err) {
         console.warn("room badge listener error", err);

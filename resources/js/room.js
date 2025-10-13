@@ -2,26 +2,20 @@ import { BadgeManager } from "./utils/badgeManager.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const app = document.getElementById("room-app");
-    if (!app) return; // só corre nesta view
+    if (!app) return;
 
-    // IDs e slug vindos da view
     window.roomId = app.dataset.roomId;
-    window.roomSlug = app.dataset.roomSlug; // usado para /rooms/{slug}/read
+    window.roomSlug = app.dataset.roomSlug;
     window.userId = document.body.dataset.authId || "";
 
     const messagesDiv = document.getElementById("messages");
     const form = document.getElementById("message-form");
     const input = document.getElementById("message-input");
 
-    // Limpar badge da sala atual ao abrir
     BadgeManager.clearBadge("room", window.roomId);
-
-    // Scroll inicial para o fundo
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
     let lastSenderId = null;
 
-    // --- Função para adicionar mensagens dinamicamente ---
     window.appendMessage = (msg) => {
         try {
             const m = msg?.message ?? msg;
@@ -66,14 +60,12 @@ document.addEventListener("DOMContentLoaded", () => {
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             lastSenderId = String(m.sender_id ?? lastSenderId);
 
-            // Limpar badge sempre que a mensagem é mostrada
             BadgeManager.clearBadge("room", window.roomId);
         } catch (err) {
             console.warn("appendMessage error (room)", err);
         }
     };
 
-    // --- Submissão do formulário ---
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const body = input.value.trim();
@@ -113,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.appendMessage(data);
                 input.value = "";
 
-                // ✅ marcar como lida usando slug
                 const token = document.querySelector(
                     'meta[name="csrf-token"]'
                 )?.content;
@@ -130,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- Atalho Enter para enviar ---
     input.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -138,7 +128,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- Apagar mensagens ---
     messagesDiv.addEventListener("click", async (e) => {
         if (e.target.classList.contains("delete-message")) {
             const id = e.target.dataset.id;
@@ -157,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- Subscrição Echo ao canal da sala ---
     try {
         if (window.currentRoomChannel) {
             window.Echo.leave(window.currentRoomChannel);
@@ -168,27 +156,34 @@ document.addEventListener("DOMContentLoaded", () => {
             "RoomMessageSent",
             (e) => {
                 const payload = e?.message ?? e;
-
-                // Garante que é a sala certa
                 if (String(payload?.room_id) !== String(window.roomId)) return;
-
-                // Ignora mensagens do próprio (já aparecem via POST)
                 if (String(payload?.sender_id) === String(window.userId))
                     return;
 
-                // Adiciona a mensagem recebida
                 if (typeof window.appendMessage === "function") {
                     window.appendMessage(payload);
                 }
+
+                // ✅ Marcar como lida ao receber mensagem na sala ativa
+                const token = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+                fetch(`/rooms/${window.roomSlug}/read`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": token,
+                        Accept: "application/json",
+                    },
+                }).catch(() => {});
             }
         );
     } catch (err) {
         console.error("[echo] erro a subscrever room channel:", err);
     }
 
-    // --- Limpeza ao sair ---
     window.addEventListener("beforeunload", () => {
         BadgeManager.clearBadge("room", window.roomId);
+        localStorage.removeItem(`roomLastRead:${window.roomId}`);
         if (window.currentRoomChannel) {
             window.Echo.leave(window.currentRoomChannel);
             window.currentRoomChannel = null;
