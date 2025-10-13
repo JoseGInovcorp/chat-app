@@ -2,7 +2,7 @@ import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 import axios from "axios";
 import { handleDirectMessageEvent } from "./handlers/dmHandler";
-// ⚠️ já não precisamos de handleRoomMessageEvent aqui
+import { handleRoomMessageEvent } from "./handlers/roomHandler"; // ✅ reposto
 
 window.Pusher = Pusher;
 window.axios = axios;
@@ -42,7 +42,6 @@ function initListenersOnce() {
     if (!readGlobals()) return;
 
     if (window.userId) {
-        // Canal privado do utilizador (DMs e eventos direcionados)
         const chUser = window.Echo.private(`user.${window.userId}`);
         chUser.listen("DirectMessageSent", handleDirectMessageEvent);
         chUser.listen(
@@ -53,11 +52,12 @@ function initListenersOnce() {
             ".App.Events.DirectMessageSent",
             handleDirectMessageEvent
         );
-        // ⚠️ Removido: chUser.listen("RoomMessageSent", handleRoomMessageEvent);
-    }
 
-    // ⚠️ Removido: subscrição dedicada ao canal da sala
-    // Agora as salas são tratadas apenas em room.js
+        // ✅ Repor escuta do evento de sala
+        chUser.listen("RoomMessageSent", handleRoomMessageEvent);
+        chUser.listen(".App\\Events\\RoomMessageSent", handleRoomMessageEvent);
+        chUser.listen(".App.Events.RoomMessageSent", handleRoomMessageEvent);
+    }
 
     initListenersOnce.done = true;
     if (import.meta.env.DEV) console.log("[echo] listeners initialized");
