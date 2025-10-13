@@ -6,8 +6,11 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Events\DirectMessageSent;
-use Illuminate\Support\Facades\Log;
 
+/**
+ * Controller responsável pela gestão de mensagens diretas (DMs).
+ * Permite listar contactos, visualizar conversas e enviar novas mensagens.
+ */
 class DirectMessageController extends Controller
 {
     public function index()
@@ -21,15 +24,15 @@ class DirectMessageController extends Controller
         $auth = auth()->user();
         abort_if($auth->id === $user->id, 404);
 
-        // ✅ Marcar como lidas antes de carregar mensagens
-        \App\Models\Message::markAsReadFrom($user, $auth);
+        // Marcar como lidas antes de carregar mensagens
+        Message::markAsReadFrom($user, $auth);
 
         $messages = Message::directBetween($auth->id, $user->id)
             ->with('sender:id,name,avatar')
-            ->orderByDesc('created_at')   // <- mais recentes primeiro
-            ->take(50)                    // <- últimas 50
+            ->orderByDesc('created_at')
+            ->take(50)
             ->get()
-            ->reverse();                  // <- inverter para mostrar em ordem cronológica
+            ->reverse();
 
         return view('dm.show', compact('user', 'messages'));
     }
@@ -42,39 +45,20 @@ class DirectMessageController extends Controller
             'body' => 'required|string|max:1000',
         ]);
 
-        // Log antes da criação
-        Log::debug('DirectMessageController@store:start', [
-            'auth_id' => auth()->id(),
-            'recipient' => $user->id,
-            'body' => mb_strimwidth($data['body'], 0, 200),
-        ]);
-
         $msg = Message::create([
             'sender_id'    => auth()->id(),
             'recipient_id' => $user->id,
             'body'         => $data['body'],
         ]);
 
-        // Log depois da criação
-        Log::debug('DirectMessageController@store:created', [
-            'message_id' => $msg->id,
-            'room_id' => $msg->room_id,
-            'recipient_id' => $msg->recipient_id,
-        ]);
-
-        // 🔥 Broadcast em tempo real (apenas para o destinatário)
+        // Broadcast em tempo real
         broadcast(new DirectMessageSent($msg))->toOthers();
-
-        Log::debug('DirectMessageController@store:event_emitted', [
-            'message_id' => $msg->id,
-            'event' => DirectMessageSent::class,
-        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'id'            => $msg->id,
                 'body'          => $msg->body,
-                'created_at'    => $msg->created_at->format('d/m/Y H:i'),
+                'created_at'    => $msg->created_at->toIso8601String(),
                 'sender_id'     => $msg->sender_id,
                 'recipient_id'  => $msg->recipient_id,
                 'sender_name'   => $msg->sender->name,
@@ -84,5 +68,22 @@ class DirectMessageController extends Controller
         }
 
         return back()->with('success', 'Mensagem enviada.');
+    }
+
+    /**
+     * Marca como lidas no servidor todas as mensagens recebidas deste utilizador
+     * quando a thread está ativa no cliente.
+     */
+    public function markActiveRead(User $user)
+    {
+        $auth = auth()->user();
+
+        if ($auth->id === $user->id) {
+            return response()->json(['ok' => true], 200);
+        }
+
+        Message::markAsReadFrom($user, $auth);
+
+        return response()->json(['ok' => true], 200);
     }
 }

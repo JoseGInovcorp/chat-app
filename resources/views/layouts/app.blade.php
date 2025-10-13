@@ -5,28 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    {{-- Título dinâmico --}}
+    <title>@yield('title', config('app.name', 'Laravel'))</title>
 
-    {{-- CSS --}}
-    @vite(['resources/css/app.css'])
+    {{-- Meta tags para SEO --}}
+    <meta name="description" content="@yield('meta_description', 'Aplicação de chat Laravel')">
+    <meta name="author" content="InovCorp">
+
+    {{-- CSS via Vite --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Stack opcional para scripts no <head> --}}
+    @stack('head')
 </head>
-<body class="font-sans antialiased">
-    <div class="min-h-screen flex bg-gray-100 dark:bg-gray-900">
+<body class="font-sans antialiased bg-gray-100 dark:bg-gray-900"
+      @auth data-auth-id="{{ auth()->id() }}" @endauth>
+    <div class="min-h-screen flex">
         @auth
-            @include('layouts.navigation') <!-- Sidebar -->
+            @includeIf('layouts.navigation') {{-- Sidebar condicional --}}
         @endauth
 
         <div class="flex-1 flex flex-col">
             @isset($header)
-                <header class="bg-white dark:bg-gray-800 shadow">
+                <header class="bg-white dark:bg-gray-800 shadow" role="banner">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
                 </header>
             @endisset
 
-            <main class="flex-1">
-                {{-- Suporta tanto @section('content') como <x-app-layout> --}}
+            <main class="flex-1" role="main">
                 @hasSection('content')
                     @yield('content')
                 @else
@@ -36,10 +44,7 @@
         </div>
     </div>
 
-    {{-- JS no fim do body para garantir que Echo já existe --}}
-    @vite(['resources/js/app.js'])
-
-    {{-- Scripts adicionais injetados pelas views --}}
+    {{-- Stack para scripts no fim do body --}}
     @stack('scripts')
 </body>
 </html>

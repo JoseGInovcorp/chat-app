@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('room_user', function (Blueprint $table) {
@@ -17,15 +14,16 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('invited_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('joined_at')->nullable();
+            $table->string('role')->default('member'); // ✅ role na sala
+            $table->string('status')->default('active'); // ✅ estado do membro
             $table->timestamps();
+            $table->softDeletes(); // ✅ histórico de membros removidos
 
             $table->unique(['room_id', 'user_id']);
+            $table->index('invited_by');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('room_user');

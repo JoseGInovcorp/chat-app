@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('direct_messages', function (Blueprint $table) {
@@ -16,15 +13,16 @@ return new class extends Migration
             $table->foreignId('sender_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('receiver_id')->constrained('users')->cascadeOnDelete();
             $table->text('content');
+            $table->string('type')->default('text'); // ✅ tipo de conteúdo
+            $table->timestamp('read_at')->nullable(); // ✅ leitura
             $table->timestamps();
+            $table->softDeletes(); // ✅ histórico
 
             $table->index(['sender_id', 'receiver_id']);
+            $table->index('created_at');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('direct_messages');

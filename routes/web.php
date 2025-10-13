@@ -49,6 +49,10 @@ Route::middleware('auth')->group(function () {
     // Salas de chat
     Route::resource('rooms', RoomController::class)->only(['index', 'show', 'create', 'store']);
 
+    // Marca mensagens da sala como lidas quando a sala está ativa no cliente
+    Route::post('rooms/{room}/read', [RoomController::class, 'markActiveRead'])
+        ->name('rooms.markActiveRead');
+
     // Convites para sala
     Route::get('/rooms/{room}/invite', [RoomController::class, 'inviteForm'])
         ->name('rooms.invite')
@@ -66,6 +70,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [DirectMessageController::class, 'index'])->name('dm.index');
         Route::get('{user}', [DirectMessageController::class, 'show'])->name('dm.show');
         Route::post('{user}', [DirectMessageController::class, 'store'])->name('dm.store');
+
+        // Marca mensagens provenientes do peer como lidas quando a thread está ativa
+        Route::post('{user}/read', [DirectMessageController::class, 'markActiveRead'])->name('dm.markActiveRead');
     });
 });
 

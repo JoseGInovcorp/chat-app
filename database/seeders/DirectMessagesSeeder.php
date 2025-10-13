@@ -11,28 +11,20 @@ class DirectMessagesSeeder extends Seeder
 {
     public function run(): void
     {
-        // Garante que os utilizadores existem
+        if (!app()->environment(['local', 'testing'])) return;
+
+        $password = Hash::make(env('DEFAULT_SEEDER_PASSWORD', 'password'));
+
         $user1 = User::firstOrCreate(
             ['email' => 'maria@example.com'],
-            [
-                'name' => 'Maria',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'active',
-            ]
+            ['name' => 'Maria', 'password' => $password, 'role' => 'user', 'status' => 'active']
         );
 
         $user2 = User::firstOrCreate(
             ['email' => 'joao@example.com'],
-            [
-                'name' => 'João',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'active',
-            ]
+            ['name' => 'João', 'password' => $password, 'role' => 'user', 'status' => 'active']
         );
 
-        // Só cria as mensagens se ainda não existirem
         if (!Message::where('sender_id', $user1->id)->where('recipient_id', $user2->id)->exists()) {
             Message::create([
                 'sender_id'    => $user1->id,

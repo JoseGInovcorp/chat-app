@@ -17,11 +17,25 @@ class RoomController extends Controller
 
     public function show(Room $room)
     {
-        // Atualiza o last_read_at sempre que o user abre a sala
-        $room->users()->updateExistingPivot(auth()->id(), [
-            'last_read_at' => now(),
-        ]);
+        $this->authorize('view', $room);
 
+        $userId = auth()->id();
+
+        if (!$room->users()->where('user_id', $userId)->exists()) {
+            $room->users()->attach($userId, [
+                'invited_by'   => $userId,
+                'joined_at'    => now(),
+                'last_read_at' => now(),
+            ]);
+        } else {
+            $room->users()->updateExistingPivot($userId, [
+                'last_read_at' => now(),
+            ]);
+        }
+
+        $room->load('users');
+
+        // 👉 usar get() em vez de paginate()
         $messages = $room->messages()
             ->with('sender')
             ->orderBy('created_at')
@@ -29,6 +43,7 @@ class RoomController extends Controller
 
         return view('rooms.show', compact('room', 'messages'));
     }
+
 
     public function create()
     {
@@ -42,7 +57,7 @@ class RoomController extends Controller
 
         $data = $request->validate([
             'name'   => 'required|string|max:120',
-            'avatar' => 'nullable|string'
+            'avatar' => 'nullable|url',
         ]);
 
         $room = Room::create([
@@ -51,13 +66,10 @@ class RoomController extends Controller
             'slug'   => Str::slug($data['name']) . '-' . Str::random(6),
         ]);
 
-        // Criador entra automaticamente na sala
-        $room->users()->syncWithoutDetaching([
-            auth()->id() => [
-                'invited_by'   => auth()->id(),
-                'joined_at'    => now(),
-                'last_read_at' => now(), // 🔑 inicializa
-            ]
+        $room->users()->attach(auth()->id(), [
+            'invited_by'   => auth()->id(),
+            'joined_at'    => now(),
+            'last_read_at' => now(),
         ]);
 
         return redirect()->route('rooms.show', $room);
@@ -79,14 +91,23 @@ class RoomController extends Controller
             'user_id' => 'required|exists:users,id'
         ]);
 
-        $room->users()->syncWithoutDetaching([
-            $data['user_id'] => [
-                'invited_by'   => auth()->id(),
-                'joined_at'    => now(),
-                'last_read_at' => now(), // 🔑 garante que o convidado já "entra"
-            ]
+        $room->users()->attach($data['user_id'], [
+            'invited_by'   => auth()->id(),
+            'joined_at'    => now(),
+            'last_read_at' => now(),
         ]);
 
         return back()->with('success', 'Utilizador convidado.');
+    }
+
+    public function markActiveRead(Room $room)
+    {
+        $this->authorize('view', $room);
+
+        $room->users()->updateExistingPivot(auth()->id(), [
+            'last_read_at' => now(),
+        ]);
+
+        return response()->json(['ok' => true], 200);
     }
 }

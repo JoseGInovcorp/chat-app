@@ -8,8 +8,12 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Support\Facades\Log;
 
+/**
+ * Evento de broadcast para mensagens em salas.
+ * Envia dados da mensagem para o canal da sala e para os canais privados
+ * de cada membro (incluindo o remetente, para sincronização multi-abas).
+ */
 class RoomMessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
@@ -18,45 +22,38 @@ class RoomMessageSent implements ShouldBroadcast
 
     public function __construct(Message $message)
     {
-        // Carrega sender e membros da sala
+        // Carrega sender e membros da sala para evitar lazy loading
         $this->message = $message->load('sender:id,name,avatar', 'room.users:id');
-
-        try {
-            $memberIds = $this->message->room?->users->pluck('id')->toArray() ?? [];
-            Log::info('RoomMessageSent constructed', [
-                'message_id' => $this->message->id,
-                'room_id'    => $this->message->room_id,
-                'member_ids' => $memberIds,
-            ]);
-        } catch (\Throwable $ex) {
-            Log::warning('RoomMessageSent: erro a calcular memberIds', [
-                'message_id' => $this->message->id ?? null,
-                'error'      => $ex->getMessage(),
-            ]);
-        }
     }
 
+    /**
+     * Define os canais de broadcast.
+     * Envia para o canal da sala e para todos os membros, incluindo o remetente.
+     */
     public function broadcastOn(): array
     {
         $channels = [new PrivateChannel('room.' . $this->message->room_id)];
 
         foreach ($this->message->room->users as $user) {
-            if ($user->id !== $this->message->sender_id) {
-                $channels[] = new PrivateChannel('user.' . $user->id);
-            }
+            $channels[] = new PrivateChannel('user.' . $user->id);
         }
 
         return $channels;
     }
 
+    /**
+     * Dados enviados no broadcast.
+     * Usa ISO 8601 para created_at, deixando a formatação para o frontend.
+     */
     public function broadcastWith(): array
     {
         return [
             'id'            => $this->message->id,
             'body'          => $this->message->body,
-            'created_at'    => $this->message->created_at->format('H:i'),
+            'created_at'    => $this->message->created_at->toIso8601String(),
             'sender_id'     => $this->message->sender_id,
             'sender_name'   => $this->message->sender->name ?? null,
+            // Melhor prática: delegar a lógica do avatar para um accessor no modelo User
             'sender_avatar' => $this->message->sender->avatar
                 ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->message->sender->name ?? ''),
             'room_id'       => $this->message->room_id,

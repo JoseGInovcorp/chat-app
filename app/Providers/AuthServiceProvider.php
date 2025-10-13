@@ -5,7 +5,11 @@ namespace App\Providers;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use App\Models\Room;
 use App\Policies\RoomPolicy;
+use Illuminate\Support\Facades\Gate;
 
+/**
+ * Service Provider responsável por registar policies e gates de autorização.
+ */
 class AuthServiceProvider extends ServiceProvider
 {
     /**
@@ -22,6 +26,9 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Aqui podes definir Gates adicionais se precisares
+        $this->registerPolicies();
+
+        // Exemplo de Gate adicional (pode expandir conforme necessário):
+        // Gate::define('view-dashboard', fn($user) => $user->isAdmin());
     }
 }

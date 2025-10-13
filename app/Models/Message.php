@@ -8,6 +8,10 @@ use App\Models\User;
 use App\Models\Room;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Modelo Eloquent que representa mensagens (diretas ou em salas).
+ * Inclui validações, relações e métodos utilitários para leitura/não lidas.
+ */
 class Message extends Model
 {
     protected $fillable = [
@@ -22,7 +26,9 @@ class Message extends Model
         'read_at' => 'datetime',
     ];
 
-    // 🚫 Validação: não pode ter room_id e recipient_id ao mesmo tempo
+    /**
+     * Validação: não pode ter room_id e recipient_id ao mesmo tempo.
+     */
     protected static function booted()
     {
         static::creating(function ($message) {
@@ -76,5 +82,11 @@ class Message extends Model
             ->where('recipient_id', $recipient->id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
+    }
+
+    // 🔎 Scope adicional para mensagens não lidas
+    public function scopeUnread(Builder $query): Builder
+    {
+        return $query->whereNull('read_at');
     }
 }

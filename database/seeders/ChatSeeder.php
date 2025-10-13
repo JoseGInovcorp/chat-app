@@ -13,54 +13,36 @@ class ChatSeeder extends Seeder
 {
     public function run(): void
     {
-        // Criar utilizadores (sem duplicar)
+        if (!app()->environment(['local', 'testing'])) return;
+
+        $password = Hash::make(env('DEFAULT_SEEDER_PASSWORD', 'password'));
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            [
-                'name' => 'Admin',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'status' => 'active',
-            ]
+            ['name' => 'Admin', 'password' => $password, 'role' => 'admin', 'status' => 'active']
         );
 
         $user1 = User::firstOrCreate(
             ['email' => 'maria@example.com'],
-            [
-                'name' => 'Maria',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'active',
-            ]
+            ['name' => 'Maria', 'password' => $password, 'role' => 'user', 'status' => 'active']
         );
 
         $user2 = User::firstOrCreate(
             ['email' => 'joao@example.com'],
-            [
-                'name' => 'João',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'active',
-            ]
+            ['name' => 'João', 'password' => $password, 'role' => 'user', 'status' => 'active']
         );
 
-        // Criar sala (sem duplicar)
         $room = Room::firstOrCreate(
             ['name' => 'Sala Geral'],
-            [
-                'avatar' => null,
-                'slug' => Str::slug('Sala Geral') . '-' . Str::random(6),
-            ]
+            ['avatar' => null, 'slug' => Str::slug('Sala Geral') . '-' . Str::random(6)]
         );
 
-        // Associar utilizadores à sala (com pivot data)
         $room->users()->syncWithoutDetaching([
             $admin->id => ['invited_by' => $admin->id, 'joined_at' => now()],
             $user1->id => ['invited_by' => $admin->id, 'joined_at' => now()],
             $user2->id => ['invited_by' => $admin->id, 'joined_at' => now()],
         ]);
 
-        // Criar mensagens (só se ainda não existirem)
         if ($room->messages()->count() === 0) {
             Message::create([
                 'sender_id' => $admin->id,

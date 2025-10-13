@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
@@ -17,16 +14,20 @@ return new class extends Migration
             $table->foreignId('room_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('recipient_id')->nullable()->constrained('users')->cascadeOnDelete();
             $table->text('body');
+            $table->string('type')->default('text'); // ✅ tipo de mensagem
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
+            $table->softDeletes(); // ✅ histórico de mensagens apagadas
 
             $table->index(['room_id', 'recipient_id']);
+            $table->index('sender_id');
+            $table->index('created_at');
         });
+
+        // Opcional: constraint check (dependente do DB)
+        // DB::statement('ALTER TABLE messages ADD CONSTRAINT chk_message_target CHECK (room_id IS NOT NULL OR recipient_id IS NOT NULL)');
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('messages');

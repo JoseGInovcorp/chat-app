@@ -13,63 +13,35 @@ class ChatDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        // Criar utilizadores (sem duplicar)
+        if (!app()->environment(['local', 'testing'])) return;
+
+        $password = Hash::make(env('DEFAULT_SEEDER_PASSWORD', 'password'));
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            [
-                'name' => 'Admin',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'status' => 'active',
-            ]
+            ['name' => 'Admin', 'password' => $password, 'role' => 'admin', 'status' => 'active']
         );
 
         $user1 = User::firstOrCreate(
             ['email' => 'alice@example.com'],
-            [
-                'name' => 'Alice',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'active',
-            ]
+            ['name' => 'Alice', 'password' => $password, 'role' => 'user', 'status' => 'active']
         );
 
         $user2 = User::firstOrCreate(
             ['email' => 'bob@example.com'],
-            [
-                'name' => 'Bob',
-                'password' => Hash::make('password'),
-                'role' => 'user',
-                'status' => 'active',
-            ]
+            ['name' => 'Bob', 'password' => $password, 'role' => 'user', 'status' => 'active']
         );
 
-        // Criar salas (garantir slug)
         $room1 = Room::firstOrCreate(
             ['name' => 'Sala Geral'],
-            [
-                'avatar' => null,
-                'slug' => Str::slug('Sala Geral') . '-' . Str::random(6),
-            ]
+            ['avatar' => null, 'slug' => Str::slug('Sala Geral') . '-' . Str::random(6)]
         );
-        if (!$room1->slug) {
-            $room1->slug = Str::slug($room1->name) . '-' . Str::random(6);
-            $room1->save();
-        }
 
         $room2 = Room::firstOrCreate(
             ['name' => 'Projeto X'],
-            [
-                'avatar' => null,
-                'slug' => Str::slug('Projeto X') . '-' . Str::random(6),
-            ]
+            ['avatar' => null, 'slug' => Str::slug('Projeto X') . '-' . Str::random(6)]
         );
-        if (!$room2->slug) {
-            $room2->slug = Str::slug($room2->name) . '-' . Str::random(6);
-            $room2->save();
-        }
 
-        // Associar utilizadores às salas
         $room1->users()->syncWithoutDetaching([
             $admin->id => ['invited_by' => $admin->id, 'joined_at' => now()],
             $user1->id => ['invited_by' => $admin->id, 'joined_at' => now()],
@@ -81,7 +53,6 @@ class ChatDemoSeeder extends Seeder
             $user1->id => ['invited_by' => $admin->id, 'joined_at' => now()],
         ]);
 
-        // Mensagens em sala (só se não existirem)
         Message::firstOrCreate([
             'sender_id' => $admin->id,
             'room_id'   => $room1->id,
@@ -100,7 +71,6 @@ class ChatDemoSeeder extends Seeder
             'body'      => 'Bom dia!',
         ]);
 
-        // Mensagens diretas (só se não existirem)
         Message::firstOrCreate([
             'sender_id'    => $user1->id,
             'recipient_id' => $user2->id,

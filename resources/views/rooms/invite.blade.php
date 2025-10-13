@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-2xl mx-auto mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+<div class="max-w-2xl mx-auto mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fadeIn">
     <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">
         Convidar utilizadores para a sala: {{ $room->name }}
     </h2>
 
     @if(session('success'))
-        <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
+        <div class="mb-4 p-3 bg-green-100 text-green-800 rounded" role="alert">
             {{ session('success') }}
         </div>
     @endif
@@ -19,7 +19,8 @@
                 Selecionar utilizador
             </label>
             <select name="user_id" id="user_id"
-                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500">
+                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Selecionar utilizador para convidar">
                 @foreach($users as $user)
                     <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
                 @endforeach
@@ -28,7 +29,8 @@
 
         <div class="flex justify-end">
             <button type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
+                    class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+                    aria-label="Convidar utilizador para a sala">
                 Convidar
             </button>
         </div>
