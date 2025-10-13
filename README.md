@@ -246,6 +246,69 @@ Foram criados automaticamente via seeders:
 
 ---
 
+## Continuação de Correções e Melhorias de Real‑time e Badges — 07/10/2025-10/10/2025
+
+-   [x] Revisão de Service Providers, Controllers, Requests, Events, Models, Policies e configs principais (app.php, broadcasting.php, auth.php).
+-   [x] Início da análise da base de dados: UserFactory e migrations de users, rooms, messages e room_user.
+-   [x] Terminada analise da base de dados, no que diz respeito as restantes migrations e seeders, com respetiva documentação.
+-   [x] Revista pasta resource com ajustes ao nível das views e JS, para garantir as boas praticas, consistência e modularização, devidamente documentados;
+-   [x] Revisão completa da pasta routes/
+-   [x] Limpeza e boas práticas aplicadas ao .env e .env.example.
+
+---
+
+## 📦 Changelog — Versão `v1.3-badge-read-sync` - 13 de outubro de 2025
+
+**Estado:** Estável e validado em produção
+
+### ✨ Melhorias
+
+-   **Sincronização de leitura em salas:**  
+    Mensagens recebidas na sala ativa agora disparam uma chamada `POST /rooms/{slug}/read`, garantindo que a leitura é persistida mesmo sem resposta.  
+    Isto evita falsos positivos de badge ao sair da sala após visualizar mensagens.
+
+-   **Modularização da lógica de badge:**  
+    Separação clara entre `roomHandler.js` (eventos de sala) e `dmHandler.js` (eventos de DMs), com escuta via canal `user.{id}`.  
+    `BadgeManager.js` centraliza aplicação, limpeza e sincronização visual/localStorage.
+
+-   **Subscrição e limpeza de canais Echo:**  
+    Subscrição ao canal `room.{id}` é feita em `room.js`, com `Echo.leave()` executado ao sair da sala.  
+    Nas DMs, o canal `user.{id}` permanece ativo globalmente, não sendo necessário `Echo.leave`.
+
+---
+
+### 🛠️ Correções
+
+-   **✅ Badge em DMs (`v1.2-dm-badge-fix`)**
+-   Corrigido bug onde mensagens recebidas fora da DM ativa não disparavam badge.
+-   Adicionada escuta ao evento `DirectMessageSent` no canal `user.{id}`.
+-   Badge aplicado apenas se o utilizador estiver fora da DM ativa.
+-   Persistência garantida via `localStorage` e sincronização entre abas.
+
+-   **✅ Badge em salas (`v1.3-badge-read-sync`)**
+-   Corrigido bug onde o badge reaparecia ao sair da sala, mesmo após leitura.
+-   Leitura agora marcada ao receber mensagem na sala ativa (sem necessidade de resposta).
+-   `Echo.leave()` garante que o canal da sala é abandonado corretamente.
+-   `roomHandler.js` evita duplicações e aplica badge apenas quando necessário.
+
+---
+
+### 📁 Ficheiros alterados
+
+-   `resources/js/room.js`
+-   `resources/js/handlers/roomHandler.js`
+-   `resources/js/handlers/dmHandler.js`
+-   `resources/js/utils/badgeManager.js`
+-   `resources/js/bootstrap.js`
+
+---
+
+### 🧠 Notas técnicas
+
+-   A leitura de mensagens em salas é agora persistida no backend, permitindo lógica de badge mais precisa.
+-   A lógica de badge é totalmente modular e separada por tipo (`dm` vs `room`), evitando colisões e duplicações.
+-   O sistema está preparado para escalar com múltiplas salas e DMs, mantendo consistência visual e funcional.
+
 ## 📎 Notas
 
 -   Projeto isolado do sistema de biblioteca para manter domínios separados
