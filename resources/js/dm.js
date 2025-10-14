@@ -1,5 +1,27 @@
 import { BadgeManager } from "./utils/badgeManager.js";
 
+// Helpers de formatação
+function formatTime(ts) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    return d.toLocaleTimeString("pt-PT", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+}
+
+function formatDate(ts) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return "Hoje";
+    if (d.toDateString() === yesterday.toDateString()) return "Ontem";
+    return d.toLocaleDateString("pt-PT");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const app = document.getElementById("dm-app");
     if (!app) return; // só corre nesta view
@@ -22,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     win.scrollTop = win.scrollHeight;
 
     let lastSenderId = null;
+    let lastRenderedDate = null;
 
     // --- Função para adicionar mensagens dinamicamente ---
     const appendMessage = (msg) => {
@@ -31,6 +54,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const messageKey = m.id ? `message-${m.id}` : `temp-${m.temp_id}`;
             if (win.querySelector(`[data-message-id="${messageKey}"]`)) return;
+
+            // Separador de dia
+            const msgDate = formatDate(m.created_at);
+            if (lastRenderedDate !== msgDate) {
+                const sep = document.createElement("div");
+                sep.className = "text-center text-xs text-gray-400 my-2";
+                sep.innerText = msgDate;
+                win.appendChild(sep);
+                lastRenderedDate = msgDate;
+            }
 
             const isOwn = String(m.sender_id) === authId;
             const isSameSender = lastSenderId === String(m.sender_id);
@@ -56,9 +89,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 }">
                     <p class="text-sm whitespace-pre-line">${m.body ?? ""}</p>
-                    <span class="text-[10px] opacity-70 block text-right mt-1">${
-                        m.created_at ?? ""
-                    }</span>
+                    <span class="text-[10px] opacity-70 block text-right mt-1">
+                        ${formatTime(m.created_at)}
+                    </span>
                 </div>
             `;
 
@@ -88,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
             recipient_id: peerId,
             body,
             sender_name: "Tu",
-            created_at: "Agora",
+            created_at: new Date().toISOString(),
         });
 
         try {
