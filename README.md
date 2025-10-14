@@ -309,6 +309,16 @@ Foram criados automaticamente via seeders:
 -   A lógica de badge é totalmente modular e separada por tipo (`dm` vs `room`), evitando colisões e duplicações.
 -   O sistema está preparado para escalar com múltiplas salas e DMs, mantendo consistência visual e funcional.
 
+---
+
+## 📌 Log de Desenvolvimento — 14 de Outubro de 2025
+
+-   Melhorada a formatação de mensagens em **DMs** e **Salas**:
+    -   Exibição de **hora correta** sem ser cru, nas mensagens.
+    -   Distinção entre **Hoje**, **Ontem** e outros dias.
+-   Atualizados os ficheiros **`dm.js`** e **`room.js`** para suportar separadores de dia e hora legível.
+-   Atualizado o **`DOCUMENTATION.md`** com registo técnico das alterações.
+
 ## 📎 Notas
 
 -   Projeto isolado do sistema de biblioteca para manter domínios separados
