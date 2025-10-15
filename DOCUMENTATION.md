@@ -427,7 +427,7 @@ Define quem pode criar, convidar, visualizar, atualizar e eliminar salas.
     Apenas administradores podem criar novas salas.
 
 -   `invite(User $user, Room $room): bool`  
-    Apenas administradores ou membros da sala podem convidar outros utilizadores.
+    Apenas administradores podem convidar outros utilizadores.
 
 -   `view(User $user, Room $room): bool`  
     Um utilizador pode visualizar a sala se for administrador ou membro.

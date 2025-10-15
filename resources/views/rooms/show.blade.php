@@ -32,7 +32,7 @@
                  class="flex flex-col {{ $message->sender_id === auth()->id() ? 'items-end' : 'items-start' }} animate-fadeInUp">
                 @unless($isSameSender)
                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">
-                        {{ $message->sender->name }}
+                        {{ optional($message->sender)->name ?? 'Utilizador removido' }}
                     </div>
                 @endunless
                 <div class="max-w-xs px-4 py-2 rounded-xl shadow-sm font-medium

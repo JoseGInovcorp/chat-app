@@ -23,7 +23,7 @@ class RoomPolicy
      */
     public function invite(User $user, Room $room): bool
     {
-        return $user->isAdmin() || $room->users()->where('user_id', $user->id)->exists();
+        return $user->isAdmin();
     }
 
     /**

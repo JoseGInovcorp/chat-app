@@ -327,6 +327,22 @@ Foram criados automaticamente via seeders:
 
 ---
 
+### 📌 Log de Desenvolvimento — 15 de Outubro de 2025
+
+-   Corrigida a política de convites em salas:
+
+    -   Apenas utilizadores com papel **admin** podem convidar membros.
+    -   Atualizado o método `RoomPolicy@invite` para restringir acesso.
+
+-   Corrigido erro ao renderizar mensagens com remetente inexistente:
+
+    -   Atualizada a view `rooms/show.blade.php` para usar fallback seguro (`optional($message->sender)`).
+    -   Evita erro `Attempt to read property "name" on null`.
+
+-   Gravado video de apresentação
+
+[📺 Ver vídeo relativo ao projeto Chat-app no Google Drive](https://drive.google.com/file/d/1vKSlwbUobq_SbACD5pgwGRg_w3LhCeSg/view?usp=sharing)
+
 ## 👨‍💻 Autor
 
 José G. durante estágio na InovCorp.
